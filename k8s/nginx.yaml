@@ -1,0 +1,32 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: myNginx
+spec:
+  selector:
+    matchLabels:
+      run: myNginx
+  replicas: 2
+  template:
+    metadata:
+      labels:
+        run: myNgnx
+    spec:
+      containers:
+        - name: myNginx
+          image: nginx
+          ports:
+            - containerPort: 80
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: myNginx
+  labels:
+    run: myNginx
+spec:
+  ports:
+    - port: 80
+  selector:
+    run: myNginx
