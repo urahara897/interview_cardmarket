@@ -4,9 +4,10 @@
 ## This repo contains tasks we request interviewees to complete
 
 * No tasks require the use of any paid services.
+* For all of the following tasks please use your favourite tools.
 * During the interview the interviewee guides us through
 their solution. Explaining decisions and technical concepts as we go.
-* Tasks can be solved very easily or as complicated as you can imagine.
+* Tasks can be solved in a very simplistic way or as complicated as you can imagine.
 Both can be valid.
 
 ### k8s deployment
