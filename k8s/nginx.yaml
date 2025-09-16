@@ -17,7 +17,7 @@ spec:
         - name: myNginx
           image: nginx
           ports:
-            - containerPort: 80
+            - containerPort: 8000
 ---
 apiVersion: v1
 kind: Service
@@ -27,6 +27,4 @@ metadata:
     app: myNginx
 spec:
   ports:
-    - port: 80
-  selector:
-    app: myNginx
+    - port: 8080

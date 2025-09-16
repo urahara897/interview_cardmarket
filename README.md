@@ -2,7 +2,7 @@
 # Interviews
 
 ## This repo contains tasks we request interviewees to complete
-
+* This repository should be forked, candidates should work in their own forked versions.
 * No tasks require the use of any paid services.
 * For all of the following tasks please use your favourite tools.
 * During the interview the interviewee guides us through
@@ -11,11 +11,10 @@ their solution. Explaining decisions and technical concepts as we go.
 Both can be valid.
 
 ### k8s deployment
-
+  
 1. Set up a kubernetes cluster ie. kind, minikube, k3s etc.
 the one you like the most.
-2. Create a deployment of an app ie. busybox, nginx, something simple.
-Maybe your own app if you have one.
+2. Create a deployment of an app ie. busybox, nginx, something simple. This application should have a dockerfile created by you and it should be built by you. 
 
 * extras: IaC, GitOps
 
