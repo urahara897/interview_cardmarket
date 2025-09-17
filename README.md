@@ -10,24 +10,18 @@
 their solution. Explaining decisions and technical concepts as we go.
 * Tasks can be solved in a very simplistic way or as complicated as you can imagine.
 Both can be valid.
-* Deployment and release can also be combined
 
 ### k8s deployment
   
 1. Set up a kubernetes cluster ie. kind, minikube, k3s etc.
 the one you like the most.
-2. Create a deployment of an app ie. treafik/whoami, hashicorp/http-echo, nginx,
-something simple. This application should have a dockerfile created by you
-and it should be built by you.
+2. Build and release an app. This application should have a dockerfile created
+by you and it should be built by you. This can be something very simple,
+ie traefik/whoami, hashicorp/http-echo, your own if you have one.
+Each release should happen automatically.
+3. Create a deployment of this app.
 
-* extras: IaC, GitOps
-
-### repo with release
-
-1. Create a git repository
-2. Have that repository be released automatically on push.
-
-* extras: semver, changelog
+* extras: IaC, GitOps, semver, changelog
 
 ### review
 
