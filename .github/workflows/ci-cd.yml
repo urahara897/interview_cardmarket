@@ -180,10 +180,23 @@ jobs:
           PF_PID=$!
           sleep 5
 
-          # Wait for port-forward to be ready
+          # Wait for port-forward to be ready and test the response
           for i in {1..10}; do
             if curl -f http://localhost:8080 >/dev/null 2>&1; then
               echo "✅ Health check passed! Application is responding."
+              
+              # Get the actual response content
+              echo "=== App Response Content ==="
+              curl -s http://localhost:8080
+              echo ""
+              
+              # Verify the expected message
+              if curl -s http://localhost:8080 | grep -q "Hello, DevopsCardmarket Interview"; then
+                echo "✅ Correct message displayed: 'Hello, DevopsCardmarket Interview'"
+              else
+                echo "❌ Unexpected message content"
+                curl -s http://localhost:8080
+              fi
               break
             else
               echo "⏳ Waiting for application to be ready... ($i/10)"
