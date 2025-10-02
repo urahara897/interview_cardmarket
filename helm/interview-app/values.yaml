@@ -24,9 +24,13 @@ securityContext:
   capabilities:
     drop:
     - ALL
-  readOnlyRootFilesystem: true
   runAsNonRoot: true
   runAsUser: 1000
+
+# Add volume for temporary files
+volumes:
+- name: tmp
+  emptyDir: {}
 
 service:
   type: NodePort
