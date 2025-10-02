@@ -135,6 +135,11 @@ jobs:
           echo "=== Testing Helm template rendering ==="
           helm template interview-app ./helm/interview-app
 
+      - name: Create ServiceAccount
+        run: |
+          # Create the service account that Helm expects
+          kubectl create serviceaccount interview-app || echo "ServiceAccount already exists"
+
       - name: Deploy with Helm
         run: |
           # Deploy without waiting first to see if it works
@@ -148,9 +153,17 @@ jobs:
           echo "=== Checking pod status ==="
           kubectl get pods -o wide
 
+          # Check events for any errors
+          echo "=== Checking events ==="
+          kubectl get events --sort-by='.lastTimestamp'
+
+          # Check replicaset details
+          echo "=== Checking replicaset details ==="
+          kubectl describe replicaset -l app.kubernetes.io/name=interview-app
+
           # Check pod logs if any pods are failing
           echo "=== Checking pod logs ==="
-          kubectl logs -l app=interview-app || echo "No logs yet"
+          kubectl logs -l app.kubernetes.io/name=interview-app || echo "No logs yet"
 
           # Now wait for deployment
           echo "=== Waiting for deployment to be ready ==="
