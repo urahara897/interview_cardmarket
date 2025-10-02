@@ -1,0 +1,72 @@
+name: Semantic Release
+
+on:
+    push:
+        branches: [main]
+    workflow_dispatch:
+
+jobs:
+    release:
+        runs-on: ubuntu-latest
+        permissions:
+            contents: write
+            issues: write
+            pull-requests: write
+
+        steps:
+            - name: Checkout
+              uses: actions/checkout@v4
+              with:
+                  fetch-depth: 0
+                  token: ${{ secrets.GITHUB_TOKEN }}
+
+            - name: Setup Node.js
+              uses: actions/setup-node@v4
+              with:
+                  node-version: "18"
+
+            - name: Install dependencies
+              run: |
+                  npm install -g semantic-release
+                  npm install -g @semantic-release/changelog
+                  npm install -g @semantic-release/git
+
+            - name: Configure Git
+              run: |
+                  git config --global user.name "github-actions[bot]"
+                  git config --global user.email "github-actions[bot]@users.noreply.github.com"
+
+            - name: Create release
+              run: |
+                  npx semantic-release
+              env:
+                  GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+            - name: Update Helm Chart version
+              if: steps.release.outputs.new_release_published == 'true'
+              run: |
+                  NEW_VERSION=${{ steps.release.outputs.new_release_version }}
+                  echo "Updating Helm chart to version: $NEW_VERSION"
+
+                  # Update Chart.yaml
+                  sed -i "s/^version: .*/version: $NEW_VERSION/" helm/interview-app/Chart.yaml
+                  sed -i "s/^appVersion: .*/appVersion: \"$NEW_VERSION\"/" helm/interview-app/Chart.yaml
+
+                  # Update values.yaml
+                  sed -i "s/tag: \".*\"/tag: \"$NEW_VERSION\"/" helm/interview-app/values.yaml
+
+                  # Commit changes
+                  git add helm/interview-app/Chart.yaml helm/interview-app/values.yaml
+                  git commit -m "chore: update Helm chart to version $NEW_VERSION [skip ci]"
+                  git push
+
+            - name: Generate release summary
+              if: steps.release.outputs.new_release_published == 'true'
+              run: |
+                  echo "## 🎉 New Release Published!" >> $GITHUB_STEP_SUMMARY
+                  echo "**Version:** ${{ steps.release.outputs.new_release_version }}" >> $GITHUB_STEP_SUMMARY
+                  echo "**Type:** ${{ steps.release.outputs.new_release_type }}" >> $GITHUB_STEP_SUMMARY
+                  echo "**Published:** ${{ steps.release.outputs.new_release_published }}" >> $GITHUB_STEP_SUMMARY
+                  echo "" >> $GITHUB_STEP_SUMMARY
+                  echo "### What's Changed:" >> $GITHUB_STEP_SUMMARY
+                  echo "${{ steps.release.outputs.new_release_notes }}" >> $GITHUB_STEP_SUMMARY
