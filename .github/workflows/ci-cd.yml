@@ -144,38 +144,3 @@ jobs:
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "### Resources Deployed:" >> $GITHUB_STEP_SUMMARY
           kubectl get all -o wide >> $GITHUB_STEP_SUMMARY
-
-  release:
-    needs: [test, build-and-push, kubernetes-deploy]
-    runs-on: ubuntu-latest
-    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
-
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-
-      - name: Generate changelog
-        id: changelog
-        run: |
-          # Extract version from CHANGELOG.md
-          VERSION=$(grep -m 1 "## \[" CHANGELOG.md | sed 's/.*\[\(.*\)\].*/\1/')
-          echo "version=$VERSION" >> $GITHUB_OUTPUT
-
-          # Generate changelog for this version
-          awk '/## \['$VERSION'\]/,/## \[/' CHANGELOG.md | head -n -1 > release_notes.md
-          echo "changelog<<EOF" >> $GITHUB_OUTPUT
-          cat release_notes.md >> $GITHUB_OUTPUT
-          echo "EOF" >> $GITHUB_OUTPUT
-
-      - name: Create Release
-        uses: actions/create-release@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          tag_name: ${{ steps.changelog.outputs.version }}
-          release_name: Release ${{ steps.changelog.outputs.version }}
-          body: ${{ steps.changelog.outputs.changelog }}
-          draft: false
-          prerelease: false
