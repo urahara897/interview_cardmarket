@@ -65,7 +65,7 @@ jobs:
             - name: Generate release summary
               if: steps.release.outputs.new_release_published == 'true'
               run: |
-                  echo "## 🎉 New Release Published!" >> $GITHUB_STEP_SUMMARY
+                  echo "## New Release Published" >> $GITHUB_STEP_SUMMARY
                   echo "**Version:** ${{ steps.release.outputs.new_release_version }}" >> $GITHUB_STEP_SUMMARY
                   echo "**Type:** ${{ steps.release.outputs.new_release_type }}" >> $GITHUB_STEP_SUMMARY
                   echo "**Published:** ${{ steps.release.outputs.new_release_published }}" >> $GITHUB_STEP_SUMMARY

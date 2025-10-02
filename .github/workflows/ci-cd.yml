@@ -183,7 +183,7 @@ jobs:
           # Wait for port-forward to be ready and test the response
           for i in {1..10}; do
             if curl -f http://localhost:8080 >/dev/null 2>&1; then
-              echo "✅ Health check passed! Application is responding."
+              echo "Health check passed! Application is responding."
               
               # Get the actual response content
               echo "=== App Response Content ==="
@@ -192,14 +192,14 @@ jobs:
               
               # Verify the expected message
               if curl -s http://localhost:8080 | grep -q "Hello, DevopsCardmarket Interview"; then
-                echo "✅ Correct message displayed: 'Hello, DevopsCardmarket Interview'"
+                echo "Correct message displayed: 'Hello, DevopsCardmarket Interview'"
               else
-                echo "❌ Unexpected message content"
+                echo "Unexpected message content"
                 curl -s http://localhost:8080
               fi
               break
             else
-              echo "⏳ Waiting for application to be ready... ($i/10)"
+              echo "Waiting for application to be ready.... ($i/10)"
               sleep 2
             fi
           done
@@ -209,9 +209,9 @@ jobs:
 
       - name: Generate deployment report
         run: |
-          echo "## 🚀 Deployment Report" >> $GITHUB_STEP_SUMMARY
+          echo "## Deployment Report" >> $GITHUB_STEP_SUMMARY
           echo "**Cluster:** Kind (Kubernetes in Docker)" >> $GITHUB_STEP_SUMMARY
-          echo "**Image:** ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest" >> $GITHUB_STEP_SUMMARY
+          echo "**Image:** ${{ env.IMAGE_NAME }}:latest" >> $GITHUB_STEP_SUMMARY
           echo "**Namespace:** default" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "### Resources Deployed:" >> $GITHUB_STEP_SUMMARY

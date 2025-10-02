@@ -160,7 +160,7 @@ interview/
 └── README.md
 ```
 
-## 🧪 Testing
+## Testing
 
 Run tests locally:
 
@@ -190,7 +190,7 @@ pytest tests/ -v --cov=.
 helm install interview-app ./helm/interview-app
 ```
 
-## 🔧 Configuration
+## Configuration
 
 ### Environment Variables
 
@@ -216,7 +216,7 @@ resources:
     memory: 128Mi
 ```
 
-## 📊 Monitoring & Observability
+## Monitoring & Observability
 
 The application includes:
 

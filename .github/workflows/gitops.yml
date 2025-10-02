@@ -114,7 +114,7 @@ jobs:
 
             - name: Generate GitOps report
               run: |
-                  echo "## 🔄 GitOps Deployment Report" >> $GITHUB_STEP_SUMMARY
+                  echo "## GitOps Deployment Report" >> $GITHUB_STEP_SUMMARY
                   echo "**GitOps Tool:** ArgoCD" >> $GITHUB_STEP_SUMMARY
                   echo "**Repository:** ${{ github.repository }}" >> $GITHUB_STEP_SUMMARY
                   echo "**Branch:** ${{ github.ref_name }}" >> $GITHUB_STEP_SUMMARY

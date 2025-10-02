@@ -1,17 +1,16 @@
-# I am adding comments here for better understanding
-# I am using a lightweight Python image here
+# Lightweight Python image
 FROM python:3.10-slim
 
-# I am setting the working directory here
+# Set working directory
 WORKDIR /app
 
-# I am installing dependencies from requirements.txt
+# Install dependencies
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-# I am copying app code from app.py
+# Copy application code
 COPY app.py .
 
-# I am running the app here
+# Expose port and run application
 EXPOSE 8080
 CMD ["python", "app.py"]
