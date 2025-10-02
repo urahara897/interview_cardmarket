@@ -9,7 +9,7 @@ on:
 
 env:
     REGISTRY: ghcr.io
-    IMAGE_NAME: ${{ github.repository }}
+    IMAGE_NAME: ${{ github.actor }}/interview-app
 
 jobs:
     gitops-sync:
@@ -31,17 +31,17 @@ jobs:
               with:
                   cluster_name: gitops-cluster
                   config: |
-                      kind: Cluster
-                      apiVersion: kind.x-k8s.io/v1alpha4
-                      nodes:
-                      - role: control-plane
-                        extraPortMappings:
-                        - containerPort: 80
-                          hostPort: 80
-                          protocol: TCP
-                        - containerPort: 30080
-                          hostPort: 30080
-                          protocol: TCP
+                    kind: Cluster
+                    apiVersion: kind.x-k8s.io/v1alpha4
+                    nodes:
+                    - role: control-plane
+                      extraPortMappings:
+                      - containerPort: 80
+                        hostPort: 80
+                        protocol: TCP
+                      - containerPort: 30080
+                        hostPort: 30080
+                        protocol: TCP
 
             - name: Install ArgoCD
               run: |
