@@ -176,10 +176,23 @@ jobs:
           kubectl get configmaps
 
           # Test the application
-          kubectl port-forward service/interview-app-service 8080:80 &
-          sleep 10
-          curl -f http://localhost:8080 || echo "Health check failed"
-          pkill kubectl
+          kubectl port-forward service/interview-app 8080:80 &
+          PF_PID=$!
+          sleep 5
+
+          # Wait for port-forward to be ready
+          for i in {1..10}; do
+            if curl -f http://localhost:8080 >/dev/null 2>&1; then
+              echo "✅ Health check passed! Application is responding."
+              break
+            else
+              echo "⏳ Waiting for application to be ready... ($i/10)"
+              sleep 2
+            fi
+          done
+
+          # Clean up port-forward
+          kill $PF_PID 2>/dev/null || true
 
       - name: Generate deployment report
         run: |
