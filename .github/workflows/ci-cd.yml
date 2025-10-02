@@ -119,14 +119,42 @@ jobs:
           sed -i "s|repository: ghcr.io/your-username/interview-app|repository: ${{ env.IMAGE_NAME }}|g" helm/interview-app/values.yaml
           sed -i "s|tag: \".*\"|tag: \"latest\"|g" helm/interview-app/values.yaml
 
+          # Show the updated values for debugging
+          echo "=== Updated Helm values ==="
+          cat helm/interview-app/values.yaml | grep -A 5 "image:"
+
       - name: Install Helm
         run: |
           curl https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 | bash
 
+      - name: Validate Helm chart
+        run: |
+          echo "=== Validating Helm chart ==="
+          helm lint ./helm/interview-app
+
+          echo "=== Testing Helm template rendering ==="
+          helm template interview-app ./helm/interview-app
+
       - name: Deploy with Helm
         run: |
-          helm install interview-app ./helm/interview-app --wait --timeout=300s
-          kubectl rollout status deployment/interview-app --timeout=300s
+          # Deploy without waiting first to see if it works
+          helm install interview-app ./helm/interview-app
+
+          # Check what was created
+          echo "=== Checking deployed resources ==="
+          kubectl get all
+
+          # Check pod status
+          echo "=== Checking pod status ==="
+          kubectl get pods -o wide
+
+          # Check pod logs if any pods are failing
+          echo "=== Checking pod logs ==="
+          kubectl logs -l app=interview-app || echo "No logs yet"
+
+          # Now wait for deployment
+          echo "=== Waiting for deployment to be ready ==="
+          kubectl rollout status deployment/interview-app --timeout=120s
 
       - name: Test deployment
         run: |
