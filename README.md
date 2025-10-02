@@ -249,9 +249,9 @@ The application includes:
 
 ### k8s deployment
 
-1. ✅ Set up a kubernetes cluster ie. kind, minikube, k3s etc. (Using Kind in GitHub Actions)
-2. ✅ Build and release an app. This application should have a dockerfile created by you and it should be built by you. (Flask app with automated releases)
-3. ✅ Create a deployment of this app. (Complete K8s manifests with health checks)
+1. Set up a kubernetes cluster ie. kind, minikube, k3s etc. (Using Kind in GitHub Actions)
+2. Build and release an app. This application should have a dockerfile created by you and it should be built by you. (Flask app with automated releases)
+3. Create a deployment of this app. (Complete K8s manifests with health checks)
 
 **Extras completed:**
 
