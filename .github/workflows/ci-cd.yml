@@ -13,46 +13,46 @@ env:
   KIND_VERSION: v0.20.0
 
 jobs:
-  test:
+  run-tests:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout
+      - name: Get source code
         uses: actions/checkout@v4
 
-      - name: Set up Python
+      - name: Set up Python environment
         uses: actions/setup-python@v4
         with:
           python-version: "3.10"
 
-      - name: Install dependencies
+      - name: Install Python packages
         run: |
           cd app
           pip install -r requirements.txt
 
-      - name: Run tests
+      - name: Run automated tests
         run: |
           cd app
           python -m pytest tests/ || echo "No tests found, skipping..."
 
-      - name: Lint code
+      - name: Check code quality
         run: |
           cd app
           pip install flake8
           flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics || echo "Linting completed"
 
-  build:
-    needs: test
+  create-container:
+    needs: run-tests
     runs-on: ubuntu-latest
     if: github.ref == 'refs/heads/main' || github.event_name == 'release'
 
     steps:
-      - name: Checkout
+      - name: Get source code
         uses: actions/checkout@v4
 
-      - name: Set up Docker Buildx
+      - name: Set up Docker build environment
         uses: docker/setup-buildx-action@v3
 
-      - name: Build Docker image
+      - name: Create application container
         uses: docker/build-push-action@v5
         with:
           context: ./app
@@ -61,22 +61,22 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
-  # Kubernetes Test Environment Deployment
-  kubernetes-test-deploy:
-    needs: build
+  # Deploy to Test Environment
+  deploy-to-test:
+    needs: create-container
     runs-on: ubuntu-latest
     if: github.ref == 'refs/heads/main' || github.event_name == 'release'
 
     steps:
-      - name: Checkout
+      - name: Get source code
         uses: actions/checkout@v4
 
-      - name: Set up kubectl
+      - name: Set up Kubernetes tools
         uses: azure/setup-kubectl@v3
         with:
           version: "v1.28.0"
 
-      - name: Create Kind cluster
+      - name: Start local Kubernetes cluster
         run: |
           # Install Kind
           curl -Lo ./kind https://kind.sigs.k8s.io/dl/v0.20.0/kind-linux-amd64
@@ -107,14 +107,14 @@ jobs:
               protocol: TCP
           EOF
 
-      - name: Build and load image into Kind
+      - name: Prepare application container
         run: |
           # Build the image locally
           docker build -t ${{ env.IMAGE_NAME }}:latest ./app
           # Load it into Kind
           kind load docker-image ${{ env.IMAGE_NAME }}:latest --name interview-cluster
 
-      - name: Update Helm values
+      - name: Configure deployment settings
         run: |
           # Update the Helm values to use the correct image
           sed -i "s|repository: ghcr.io/your-username/interview-app|repository: ${{ env.IMAGE_NAME }}|g" helm/interview-app/values.yaml
@@ -124,7 +124,7 @@ jobs:
           echo "=== Updated Helm values ==="
           cat helm/interview-app/values.yaml | grep -A 5 "image:"
 
-      - name: Install Helm
+      - name: Set up package manager
         run: |
           curl https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 | bash
 
@@ -232,11 +232,11 @@ jobs:
           echo "### Resources Deployed:" >> $GITHUB_STEP_SUMMARY
           kubectl get all -o wide >> $GITHUB_STEP_SUMMARY
 
-  # Monitoring and Performance Testing on Test Environment
-  monitoring:
+  # Set Up Monitoring and Testing
+  setup-monitoring:
     runs-on: ubuntu-latest
-    needs: [kubernetes-test-deploy]
-    if: always() && needs.kubernetes-test-deploy.result == 'success'
+    needs: [deploy-to-test]
+    if: always() && needs.deploy-to-test.result == 'success'
 
     steps:
       - name: Checkout code
@@ -393,11 +393,11 @@ jobs:
         run: |
           kind delete cluster --name monitoring-cluster || true
 
-  # Semantic Release Job
-  release:
+  # Create New Version and Release
+  create-release:
     runs-on: ubuntu-latest
-    needs: [test, build, kubernetes-test-deploy, monitoring]
-    if: always() && (needs.test.result == 'success' && needs.build.result == 'success' && needs.kubernetes-test-deploy.result == 'success')
+    needs: [run-tests, create-container, deploy-to-test, setup-monitoring]
+    if: always() && (needs.run-tests.result == 'success' && needs.create-container.result == 'success' && needs.deploy-to-test.result == 'success')
     permissions:
       contents: write
       issues: write
