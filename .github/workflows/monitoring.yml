@@ -19,7 +19,7 @@ on:
 jobs:
     monitoring-setup:
         runs-on: ubuntu-latest
-        if: github.event.inputs.monitoring_type == 'full' || github.event.inputs.monitoring_type == 'health-check'
+        if: github.event.inputs.monitoring_type == 'full' || github.event.inputs.monitoring_type == 'health-check' || github.event_name == 'push'
 
         steps:
             - name: Checkout code
@@ -125,7 +125,7 @@ jobs:
 
     performance-test:
         runs-on: ubuntu-latest
-        if: github.event.inputs.monitoring_type == 'full' || github.event.inputs.monitoring_type == 'performance'
+        if: github.event.inputs.monitoring_type == 'full' || github.event.inputs.monitoring_type == 'performance' || github.event_name == 'push'
         needs: monitoring-setup
 
         steps:
