@@ -42,5 +42,5 @@ spec:
         severity: warning
       annotations:
         summary: "High error rate in Interview App"
-        description: "Interview App is experiencing high error rate: {{ $value }} errors per second."
+        description: "Interview App is experiencing high error rate: {{ `{{ $value }}` }} errors per second."
 {{- end }}

@@ -9,9 +9,10 @@ keywords:
 - python
 - interview
 - kubernetes
-home: https://github.com/${{ github.repository }}
+home: https://github.com/urahara897/interview_cardmarket
 sources:
-- https://github.com/${{ github.repository }}
+- https://github.com/urahara897/interview_cardmarket
 maintainers:
 - name: DevOps Team
   email: devops@example.com
+icon: https://raw.githubusercontent.com/kubernetes/kubernetes/master/logo/logo.png
