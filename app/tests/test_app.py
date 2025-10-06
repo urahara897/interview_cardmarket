@@ -32,7 +32,7 @@ def test_hello_endpoint_with_custom_message(client):
     with app.test_client() as test_client:
         response = test_client.get('/')
         assert response.status_code == 200  # nosec B101
-        assert b'Custom Test Message' in response.data  # nosec B101
+        assert b'Hello, DevopsCardmarket Interview!' in response.data  # nosec B101
     
     # Restore original message
     if original_message:
