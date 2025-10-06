@@ -1,18 +1,18 @@
-# Interview Project - Kubernetes & DevOps
+# Kubernetes DevOps Interview Project
 
-A comprehensive DevOps project demonstrating Kubernetes deployment, CI/CD, GitOps, and Infrastructure as Code practices.
+A comprehensive DevOps solution demonstrating enterprise-grade Kubernetes deployment, continuous integration and deployment (CI/CD), GitOps workflows, and Infrastructure as Code (IaC) practices. This project showcases modern container orchestration, automated testing, and deployment automation using industry-standard tools and methodologies.
 
-## Features
+## Core Components
 
-- **Flask Application**: Simple Python web application with environment variable support
-- **Docker Containerization**: Multi-stage Dockerfile with security best practices
-- **Kubernetes Deployment**: Complete K8s manifests with health checks and resource limits
-- **GitHub Actions CI/CD**: Automated testing, building, and deployment
-- **Kind Cluster**: Local Kubernetes cluster for development and CI
-- **GitOps with ArgoCD**: Continuous deployment using GitOps principles
-- **Helm Charts**: Infrastructure as Code with templated Kubernetes manifests
-- **Semantic Versioning**: Automated releases with conventional commits
-- **Comprehensive Testing**: Unit tests with pytest and coverage reporting
+- **Web Application**: Flask-based Python microservice with configurable environment variables and health endpoints
+- **Container Security**: Multi-stage Dockerfile implementation with security hardening, non-root user execution, and minimal attack surface
+- **Kubernetes Orchestration**: Complete deployment manifests with comprehensive health checks, resource constraints, and service discovery
+- **CI/CD Automation**: GitHub Actions pipeline providing automated testing, container building, security scanning, and deployment validation
+- **Container Runtime**: Kind (Kubernetes in Docker) cluster providing local development and CI/CD execution environments
+- **GitOps Workflow**: ArgoCD integration enabling declarative continuous deployment with Git-based configuration management
+- **Infrastructure Templates**: Helm charts providing reusable, parameterized Kubernetes manifest templates
+- **Release Management**: Semantic versioning system with automated version bumping, changelog generation, and GitHub release creation
+- **Quality Assurance**: Comprehensive test suite using pytest with coverage reporting and automated validation
 
 ## Requirements Checklist
 

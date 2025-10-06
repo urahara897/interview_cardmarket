@@ -246,14 +246,15 @@ jobs:
           npm install -g @semantic-release/git
           npm install -g conventional-changelog-conventionalcommits
 
-      - name: Configure Git
+      - name: Configure Git for automated releases
         run: |
-          git config --global user.name "github-actions[bot]"
-          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          # Set up Git identity for automated commit operations
+          git config --global user.name "Automated Release System"
+          git config --global user.email "release-automation@github.com"
 
-      - name: Create release
+      - name: Generate automated release and changelog
         run: |
-          # Create a minimal config that skips problematic plugins
+          # Configure semantic release with comprehensive changelog generation
           cat > .releaserc.json << 'EOF'
           {
             "branches": ["main"],
@@ -274,32 +275,41 @@ jobs:
                   {"type": "ci", "release": false}
                 ]
               }],
+              ["@semantic-release/release-notes-generator", {
+                "preset": "conventionalcommits",
+                "writerOpts": {
+                  "commitsSort": ["subject", "scope"]
+                }
+              }],
+              "@semantic-release/changelog",
               "@semantic-release/github",
               "@semantic-release/git"
             ]
           }
           EOF
 
-          # Run semantic release with minimal config
+          # Execute semantic release with comprehensive configuration
+          # This will analyze commits, generate changelog, create GitHub release, and update version tags
           npx semantic-release
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Update Helm Chart version
+      - name: Synchronize Helm chart version with release
         if: steps.release.outputs.new_release_published == 'true'
         run: |
+          # Extract the newly created version from semantic release
           NEW_VERSION=${{ steps.release.outputs.new_release_version }}
-          echo "Updating Helm chart to version $NEW_VERSION"
+          echo "Synchronizing Helm chart version to match release: $NEW_VERSION"
 
-          # Update Chart.yaml
+          # Update Chart.yaml with the new version number
           sed -i "s/^version:.*/version: $NEW_VERSION/" helm/interview-app/Chart.yaml
 
-          # Update values.yaml
+          # Update values.yaml with the new image tag
           sed -i "s/^  tag:.*/  tag: \"$NEW_VERSION\"/" helm/interview-app/values.yaml
 
-          # Commit and push changes
-          git config --local user.email "action@github.com"
-          git config --local user.name "GitHub Action"
+          # Commit and push the version synchronization changes
+          git config --local user.email "release-automation@github.com"
+          git config --local user.name "Automated Release System"
           git add helm/interview-app/Chart.yaml helm/interview-app/values.yaml
-          git commit -m "chore: bump version to $NEW_VERSION [skip ci]"
+          git commit -m "chore: synchronize Helm chart version to $NEW_VERSION [skip ci]"
           git push
