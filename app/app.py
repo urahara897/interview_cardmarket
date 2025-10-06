@@ -38,4 +38,5 @@ if __name__ == "__main__":
     # Start the Flask development server
     # Binding to 0.0.0.0 allows external connections in containerized environments
     # This is safe in containerized environments where the container is not directly exposed
-    app.run(host="0.0.0.0", port=APP_PORT, debug=False)  # nosec B104
+    # and is required for Kubernetes port forwarding to work properly
+    app.run(host="0.0.0.0", port=APP_PORT, debug=False)  # nosec B104, semgrep: python.flask.security.audit.app-run-param-config.avoid_app_run_with_bad_host

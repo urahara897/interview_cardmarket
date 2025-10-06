@@ -133,12 +133,14 @@ jobs:
                   # Clean up port-forward
                   kill $PF_PID 2>/dev/null || true
 
-            - name: Generate monitoring report
-              if: always()
-              run: |
-                  echo "## Monitoring Report" >> $GITHUB_STEP_SUMMARY
-                  echo "**Timestamp:** $(date)" >> $GITHUB_STEP_SUMMARY
-                  echo "**Monitoring Type:** ${{ github.event.inputs.monitoring_type || 'full' }}" >> $GITHUB_STEP_SUMMARY
+      - name: Generate monitoring report
+        if: always()
+        env:
+          MONITORING_TYPE: ${{ github.event.inputs.monitoring_type || 'full' }}
+        run: |
+          echo "## Monitoring Report" >> $GITHUB_STEP_SUMMARY
+          echo "**Timestamp:** $(date)" >> $GITHUB_STEP_SUMMARY
+          echo "**Monitoring Type:** $MONITORING_TYPE" >> $GITHUB_STEP_SUMMARY
                   echo "" >> $GITHUB_STEP_SUMMARY
                   echo "### Components Deployed:" >> $GITHUB_STEP_SUMMARY
                   echo "- ✅ Prometheus (metrics collection)" >> $GITHUB_STEP_SUMMARY

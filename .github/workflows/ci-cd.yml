@@ -388,7 +388,12 @@ jobs:
           echo "Deploying application without monitoring (simplified approach)..."
           helm install interview-app ./helm/interview-app \
             --set monitoring.enabled=false \
-            --set service.type=ClusterIP
+            --set service.type=ClusterIP \
+            --debug
+
+          echo "Checking Helm deployment status..."
+          helm list
+          kubectl get all
 
       - name: Wait for application to be ready
         run: |
@@ -402,6 +407,8 @@ jobs:
             kubectl describe deployment interview-app
             kubectl get pods -l app.kubernetes.io/name=interview-app
             kubectl get events --sort-by=.metadata.creationTimestamp
+            echo "Checking all pods in all namespaces:"
+            kubectl get pods --all-namespaces
             echo "Checking if pods are running but not ready:"
             kubectl get pods -o wide
             exit 1
