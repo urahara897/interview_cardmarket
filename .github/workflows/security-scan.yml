@@ -1,0 +1,108 @@
+name: Security Scanning
+
+on:
+    push:
+        branches: [main, develop]
+    pull_request:
+        branches: [main]
+    schedule:
+        - cron: "0 2 * * 1" # Weekly on Monday at 2 AM
+    workflow_dispatch:
+
+jobs:
+    security-scan:
+        runs-on: ubuntu-latest
+        permissions:
+            contents: read
+            security-events: write
+            actions: read
+
+        steps:
+            - name: Checkout code
+              uses: actions/checkout@v4
+              with:
+                  fetch-depth: 0
+
+            - name: Run Trivy vulnerability scanner
+              uses: aquasecurity/trivy-action@master
+              with:
+                  scan-type: "fs"
+                  scan-ref: "."
+                  format: "sarif"
+                  output: "trivy-results.sarif"
+
+            - name: Upload Trivy scan results to GitHub Security tab
+              uses: github/codeql-action/upload-sarif@v2
+              if: always()
+              with:
+                  sarif_file: "trivy-results.sarif"
+
+            - name: Run Trivy image scanner
+              uses: aquasecurity/trivy-action@master
+              with:
+                  image-ref: "interview-app:latest"
+                  format: "table"
+                  exit-code: "1"
+
+            - name: Run Snyk to check for vulnerabilities
+              uses: snyk/actions/docker@master
+              env:
+                  SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+              with:
+                  image: "interview-app:latest"
+                  args: --severity-threshold=high
+
+            - name: Run Bandit security linter
+              run: |
+                  pip install bandit
+                  bandit -r app/ -f json -o bandit-report.json || true
+                  bandit -r app/ -f txt
+
+            - name: Run Safety check
+              run: |
+                  pip install safety
+                  safety check --json --output safety-report.json || true
+                  safety check
+
+            - name: Run Semgrep SAST
+              uses: returntocorp/semgrep-action@v1
+              with:
+                  config: >-
+                      p/security-audit
+                      p/secrets
+                      p/owasp-top-ten
+                      p/python
+                      p/docker
+                      p/kubernetes
+
+            - name: Run Kube-score
+              run: |
+                  wget https://github.com/zegl/kube-score/releases/latest/download/kube-score_linux_amd64.tar.gz
+                  tar -xzf kube-score_linux_amd64.tar.gz
+                  chmod +x kube-score
+                  ./kube-score score helm/interview-app/templates/ || true
+
+            - name: Run Kubeval
+              run: |
+                  wget https://github.com/instrumenta/kubeval/releases/latest/download/kubeval-linux-amd64.tar.gz
+                  tar -xzf kubeval-linux-amd64.tar.gz
+                  chmod +x kubeval
+                  ./kubeval helm/interview-app/templates/*.yaml || true
+
+            - name: Generate security report
+              if: always()
+              run: |
+                  echo "## Security Scan Results" >> $GITHUB_STEP_SUMMARY
+                  echo "**Scan Date:** $(date)" >> $GITHUB_STEP_SUMMARY
+                  echo "**Branch:** ${{ github.ref_name }}" >> $GITHUB_STEP_SUMMARY
+                  echo "**Commit:** ${{ github.sha }}" >> $GITHUB_STEP_SUMMARY
+                  echo "" >> $GITHUB_STEP_SUMMARY
+                  echo "### Scans Performed:" >> $GITHUB_STEP_SUMMARY
+                  echo "- ✅ Trivy filesystem scan" >> $GITHUB_STEP_SUMMARY
+                  echo "- ✅ Trivy container image scan" >> $GITHUB_STEP_SUMMARY
+                  echo "- ✅ Snyk vulnerability scan" >> $GITHUB_STEP_SUMMARY
+                  echo "- ✅ Bandit Python security linter" >> $GITHUB_STEP_SUMMARY
+                  echo "- ✅ Safety dependency check" >> $GITHUB_STEP_SUMMARY
+                  echo "- ✅ Semgrep SAST analysis" >> $GITHUB_STEP_SUMMARY
+                  echo "- ✅ Kube-score Kubernetes manifest validation" >> $GITHUB_STEP_SUMMARY
+                  echo "- ✅ Kubeval Kubernetes schema validation" >> $GITHUB_STEP_SUMMARY

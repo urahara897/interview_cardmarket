@@ -77,13 +77,96 @@ config:
 probes:
   liveness:
     httpGet:
-      path: /
+      path: /health
       port: 8080
     initialDelaySeconds: 30
     periodSeconds: 10
+    timeoutSeconds: 5
+    failureThreshold: 3
   readiness:
     httpGet:
-      path: /
+      path: /health
       port: 8080
     initialDelaySeconds: 5
     periodSeconds: 5
+    timeoutSeconds: 3
+    failureThreshold: 3
+  startup:
+    httpGet:
+      path: /health
+      port: 8080
+    initialDelaySeconds: 10
+    periodSeconds: 5
+    timeoutSeconds: 3
+    failureThreshold: 30
+
+# Monitoring configuration
+monitoring:
+  enabled: true
+  serviceMonitor:
+    enabled: true
+    interval: 30s
+    scrapeTimeout: 10s
+  prometheusRule:
+    enabled: true
+
+# Network Policy configuration
+networkPolicy:
+  enabled: false
+  ingress:
+    namespace: default
+
+# Security enhancements
+podSecurityContext:
+  fsGroup: 2000
+  seccompProfile:
+    type: RuntimeDefault
+
+securityContext:
+  capabilities:
+    drop:
+    - ALL
+  runAsNonRoot: true
+  runAsUser: 1000
+  allowPrivilegeEscalation: false
+  readOnlyRootFilesystem: false
+
+# Pod Disruption Budget
+podDisruptionBudget:
+  enabled: false
+  minAvailable: 1
+  maxUnavailable: 1
+
+# Enhanced annotations
+podAnnotations:
+  prometheus.io/scrape: "true"
+  prometheus.io/port: "8080"
+  prometheus.io/path: "/metrics"
+  sidecar.istio.io/inject: "false"
+
+# Service mesh configuration
+serviceMesh:
+  enabled: false
+  sidecar:
+    enabled: false
+    image: "istio/proxyv2:latest"
+
+# Backup configuration
+backup:
+  enabled: false
+  schedule: "0 2 * * *"
+  retention: "7d"
+  storage:
+    size: "1Gi"
+    storageClass: "standard"
+
+# Additional environment variables
+env:
+  - name: TZ
+    value: "UTC"
+  - name: PYTHONUNBUFFERED
+    value: "1"
+  - name: LOG_LEVEL
+    value: "INFO"
+  - name: ENVIRONMENT
+    value: "production"

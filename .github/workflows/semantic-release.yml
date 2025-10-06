@@ -1,10 +1,24 @@
 name: Semantic Release
 
 on:
-    # Disabled - semantic release is now integrated into CI/CD pipeline
-    # push:
-    #     branches: [main]
+    # Manual trigger for semantic release testing and debugging
     workflow_dispatch:
+        inputs:
+            release_type:
+                description: "Type of release to create"
+                required: true
+                default: "auto"
+                type: choice
+                options:
+                    - auto
+                    - patch
+                    - minor
+                    - major
+            dry_run:
+                description: "Run in dry-run mode (no actual release)"
+                required: false
+                default: false
+                type: boolean
 
 jobs:
     release:
