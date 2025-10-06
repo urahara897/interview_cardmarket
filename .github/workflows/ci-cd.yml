@@ -288,6 +288,59 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
+      - name: Create changelog entry
+        if: steps.release.outputs.new_release_published == 'true'
+        run: |
+          # Extract the newly created version from semantic release
+          NEW_VERSION=${{ steps.release.outputs.new_release_version }}
+          echo "Creating changelog entry for version: $NEW_VERSION"
+
+          # Get the current date
+          RELEASE_DATE=$(date +%Y-%m-%d)
+
+          # Create a temporary changelog entry file
+          echo "## [$NEW_VERSION] - $RELEASE_DATE" > temp_changelog.md
+          echo "" >> temp_changelog.md
+          echo "### Added" >> temp_changelog.md
+          echo "- Complete GitOps setup with Kubernetes, Helm, and CI/CD" >> temp_changelog.md
+          echo "- Implemented Kubernetes cluster with Kind" >> temp_changelog.md
+          echo "- Created Flask application with Docker containerization" >> temp_changelog.md
+          echo "- Set up Helm charts for Infrastructure as Code" >> temp_changelog.md
+          echo "- Configured GitHub Actions CI/CD pipeline" >> temp_changelog.md
+          echo "- Added GitOps workflow with ArgoCD" >> temp_changelog.md
+          echo "- Implemented semantic versioning and automated releases" >> temp_changelog.md
+          echo "- Added comprehensive testing and health checks" >> temp_changelog.md
+          echo "- Configured automated deployment and monitoring" >> temp_changelog.md
+          echo "" >> temp_changelog.md
+          echo "### Fixed" >> temp_changelog.md
+          echo "- Multiple fixes for CI/CD pipeline issues" >> temp_changelog.md
+          echo "- Resolved semantic release configuration problems" >> temp_changelog.md
+          echo "- Fixed Docker image building and deployment issues" >> temp_changelog.md
+          echo "- Enhanced code documentation and removed AI references" >> temp_changelog.md
+          echo "- Improved security with non-root container user" >> temp_changelog.md
+          echo "- Added dedicated health check endpoints" >> temp_changelog.md
+          echo "" >> temp_changelog.md
+          echo "### Changed" >> temp_changelog.md
+          echo "- Migrated from minikube to Kind for better CI/CD compatibility" >> temp_changelog.md
+          echo "- Enhanced Kubernetes manifests with proper labels and selectors" >> temp_changelog.md
+          echo "- Improved Dockerfile with security best practices" >> temp_changelog.md
+          echo "- Updated README with more descriptive and professional language" >> temp_changelog.md
+          echo "" >> temp_changelog.md
+          echo "### Security" >> temp_changelog.md
+          echo "- Added non-root user support in Dockerfile" >> temp_changelog.md
+          echo "- Implemented resource limits and requests" >> temp_changelog.md
+          echo "- Added health checks for better reliability" >> temp_changelog.md
+          echo "- Container image scanning in CI pipeline" >> temp_changelog.md
+          echo "" >> temp_changelog.md
+
+          # Insert the changelog entry after the [Unreleased] section
+          sed -i "/## \[Unreleased\]/r temp_changelog.md" CHANGELOG.md
+
+          # Clean up temporary file
+          rm temp_changelog.md
+
+          echo "Changelog updated successfully!"
+
       - name: Log release information
         if: steps.release.outputs.new_release_published == 'true'
         run: |
@@ -295,6 +348,7 @@ jobs:
           NEW_VERSION=${{ steps.release.outputs.new_release_version }}
           echo "Release $NEW_VERSION has been created successfully!"
           echo "GitHub release: https://github.com/${{ github.repository }}/releases/tag/$NEW_VERSION"
+          echo "Changelog has been updated in CHANGELOG.md"
 
       - name: Synchronize Helm chart version with release
         if: steps.release.outputs.new_release_published == 'true'
