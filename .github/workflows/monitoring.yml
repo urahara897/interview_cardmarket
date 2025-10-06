@@ -1,8 +1,7 @@
 name: Monitoring and Observability
 
 on:
-    push:
-        branches: [main]
+    # Disabled - functionality moved to ci-cd.yml
     workflow_dispatch:
         inputs:
             monitoring_type:
@@ -57,16 +56,41 @@ jobs:
                     --create-namespace \
                     --set grafana.adminPassword=admin123
 
+            - name: Build Docker image
+              run: |
+                  # Build the Docker image for the application
+                  docker build -t interview-app:latest ./app
+                  echo "Docker image built successfully"
+
+            - name: Load image into Kind cluster
+              run: |
+                  # Load the Docker image into the Kind cluster
+                  kind load docker-image interview-app:latest --name monitoring-cluster
+                  echo "Docker image loaded into Kind cluster"
+
             - name: Deploy application with monitoring
               run: |
-                  # Deploy the application
+                  # Deploy the application with monitoring enabled
                   helm install interview-app ./helm/interview-app \
                     --set monitoring.enabled=true \
+                    --set monitoring.prometheusOperator=true \
                     --set service.type=ClusterIP
 
             - name: Wait for application to be ready
               run: |
-                  kubectl wait --for=condition=available --timeout=300s deployment/interview-app
+                  echo "Checking deployment status..."
+                  kubectl get deployments
+                  kubectl get pods
+
+                  echo "Waiting for deployment to be available..."
+                  kubectl wait --for=condition=available --timeout=300s deployment/interview-app || {
+                      echo "Deployment failed, checking status:"
+                      kubectl describe deployment interview-app
+                      kubectl get events --sort-by=.metadata.creationTimestamp
+                      exit 1
+                  }
+
+                  echo "Deployment is ready!"
                   sleep 30
 
             - name: Run health checks

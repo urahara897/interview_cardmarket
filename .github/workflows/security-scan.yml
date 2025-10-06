@@ -1,13 +1,14 @@
 name: Security Scanning
 
 on:
-    push:
-        branches: [main, develop]
-    pull_request:
-        branches: [main]
-    schedule:
-        - cron: "0 2 * * 1" # Weekly on Monday at 2 AM
+    # Disabled - functionality moved to ci-cd.yml
     workflow_dispatch:
+        inputs:
+            enable_security_scan:
+                description: "Enable security scanning"
+                required: false
+                default: true
+                type: boolean
 
 jobs:
     security-scan:

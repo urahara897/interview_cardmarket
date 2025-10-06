@@ -217,10 +217,244 @@ jobs:
           echo "### Resources Deployed:" >> $GITHUB_STEP_SUMMARY
           kubectl get all -o wide >> $GITHUB_STEP_SUMMARY
 
+  # Security Scanning Job
+  security-scan:
+    runs-on: ubuntu-latest
+    needs: [build]
+    if: always() && needs.build.result == 'success'
+    permissions:
+      contents: read
+      security-events: write
+      actions: read
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Run Trivy vulnerability scanner
+        uses: aquasecurity/trivy-action@master
+        with:
+          scan-type: "fs"
+          scan-ref: "."
+          format: "sarif"
+          output: "trivy-results.sarif"
+
+      - name: Upload Trivy scan results to GitHub Security tab
+        uses: github/codeql-action/upload-sarif@v2
+        if: always()
+        with:
+          sarif_file: "trivy-results.sarif"
+
+      - name: Run Trivy image scanner
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: "interview-app:latest"
+          format: "table"
+          exit-code: "0"
+
+      - name: Setup Python for security tools
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y python3 python3-pip
+          pip3 install --user bandit safety
+
+      - name: Run Bandit security linter
+        run: |
+          python3 -m bandit -r app/ -f json -o bandit-report.json || true
+          python3 -m bandit -r app/ -f txt
+
+      - name: Run Safety check
+        run: |
+          python3 -m safety check --json --output safety-report.json || true
+          python3 -m safety check
+
+      - name: Run Semgrep SAST
+        uses: returntocorp/semgrep-action@v1
+        with:
+          config: >-
+            p/security-audit
+            p/secrets
+            p/owasp-top-ten
+            p/python
+            p/docker
+            p/kubernetes
+
+      - name: Run Kube-score
+        run: |
+          wget https://github.com/zegl/kube-score/releases/latest/download/kube-score_linux_amd64.tar.gz
+          tar -xzf kube-score_linux_amd64.tar.gz
+          chmod +x kube-score
+          ./kube-score score helm/interview-app/templates/ || true
+
+      - name: Run Kubeval
+        run: |
+          wget https://github.com/instrumenta/kubeval/releases/latest/download/kubeval-linux-amd64.tar.gz
+          tar -xzf kubeval-linux-amd64.tar.gz
+          chmod +x kubeval
+          ./kubeval helm/interview-app/templates/*.yaml || true
+
+      - name: Generate security report
+        if: always()
+        run: |
+          echo "## Security Scan Results" >> $GITHUB_STEP_SUMMARY
+          echo "**Scan Date:** $(date)" >> $GITHUB_STEP_SUMMARY
+          echo "**Branch:** ${{ github.ref_name }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Commit:** ${{ github.sha }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Scans Performed:" >> $GITHUB_STEP_SUMMARY
+          echo "- ✅ Trivy filesystem scan" >> $GITHUB_STEP_SUMMARY
+          echo "- ✅ Trivy container image scan" >> $GITHUB_STEP_SUMMARY
+          echo "- ✅ Bandit Python security linter" >> $GITHUB_STEP_SUMMARY
+          echo "- ✅ Safety dependency check" >> $GITHUB_STEP_SUMMARY
+          echo "- ✅ Semgrep SAST analysis" >> $GITHUB_STEP_SUMMARY
+          echo "- ✅ Kube-score Kubernetes manifest validation" >> $GITHUB_STEP_SUMMARY
+          echo "- ✅ Kubeval Kubernetes schema validation" >> $GITHUB_STEP_SUMMARY
+
+  # Monitoring and Performance Testing Job
+  monitoring:
+    runs-on: ubuntu-latest
+    needs: [kubernetes-deploy]
+    if: always() && needs.kubernetes-deploy.result == 'success'
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup monitoring tools
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y curl jq apache2-utils
+
+      - name: Create Kind cluster for monitoring
+        run: |
+          curl -Lo ./kind https://kind.sigs.k8s.io/dl/v0.20.0/kind-linux-amd64
+          chmod +x ./kind
+          sudo mv ./kind /usr/local/bin/kind
+
+          kind create cluster --name monitoring-cluster --config - <<EOF
+          apiVersion: kind.x-k8s.io/v1alpha4
+          nodes:
+          - role: control-plane
+            kubeadmConfigPatches:
+            - |
+              kind: InitConfiguration
+              nodeRegistration:
+                kubeletExtraArgs:
+                  node-labels: "ingress-ready=true"
+            extraPortMappings:
+            - containerPort: 80
+              hostPort: 80
+              protocol: TCP
+            - containerPort: 443
+              hostPort: 443
+              protocol: TCP
+            - containerPort: 30080
+              hostPort: 30080
+              protocol: TCP
+          EOF
+
+      - name: Install Helm
+        run: |
+          curl https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 | bash
+
+      - name: Install Prometheus and Grafana
+        run: |
+          helm repo add prometheus-community https://prometheus-community.github.io/helm-charts
+          helm repo add grafana https://grafana.github.io/helm-charts
+          helm repo update
+
+          helm install prometheus prometheus-community/kube-prometheus-stack \
+            --namespace monitoring \
+            --create-namespace \
+            --set grafana.adminPassword=admin123
+
+      - name: Build and load Docker image
+        run: |
+          docker build -t interview-app:latest ./app
+          kind load docker-image interview-app:latest --name monitoring-cluster
+
+      - name: Deploy application with monitoring
+        run: |
+          helm install interview-app ./helm/interview-app \
+            --set monitoring.enabled=true \
+            --set monitoring.prometheusOperator=true \
+            --set service.type=ClusterIP
+
+      - name: Wait for application to be ready
+        run: |
+          echo "Waiting for deployment..."
+          kubectl wait --for=condition=available --timeout=300s deployment/interview-app || {
+            echo "Deployment failed, checking status:"
+            kubectl describe deployment interview-app
+            kubectl get events --sort-by=.metadata.creationTimestamp
+            exit 1
+          }
+          sleep 30
+
+      - name: Run health checks
+        run: |
+          echo "## Health Check Results" >> $GITHUB_STEP_SUMMARY
+
+          POD_NAME=$(kubectl get pods -l app.kubernetes.io/name=interview-app -o jsonpath='{.items[0].metadata.name}')
+
+          echo "**Pod Status:**" >> $GITHUB_STEP_SUMMARY
+          kubectl get pod $POD_NAME -o wide >> $GITHUB_STEP_SUMMARY
+
+          kubectl port-forward service/interview-app 8080:80 &
+          PF_PID=$!
+          sleep 5
+
+          echo "**Health Endpoint Response:**" >> $GITHUB_STEP_SUMMARY
+          curl -f http://localhost:8080/health >> $GITHUB_STEP_SUMMARY || echo "Health check failed"
+
+          echo "**Main Endpoint Response:**" >> $GITHUB_STEP_SUMMARY
+          curl -f http://localhost:8080/ >> $GITHUB_STEP_SUMMARY || echo "Main endpoint failed"
+
+          kill $PF_PID 2>/dev/null || true
+
+      - name: Run performance tests
+        run: |
+          echo "## Performance Test Results" >> $GITHUB_STEP_SUMMARY
+
+          kubectl port-forward service/interview-app 8080:80 &
+          PF_PID=$!
+          sleep 5
+
+          echo "**Load Test (100 requests, 10 concurrent):**" >> $GITHUB_STEP_SUMMARY
+          ab -n 100 -c 10 http://localhost:8080/ >> $GITHUB_STEP_SUMMARY || echo "Load test failed"
+
+          echo "**Health Check Load Test:**" >> $GITHUB_STEP_SUMMARY
+          ab -n 50 -c 5 http://localhost:8080/health >> $GITHUB_STEP_SUMMARY || echo "Health check load test failed"
+
+          kill $PF_PID 2>/dev/null || true
+
+      - name: Generate monitoring report
+        if: always()
+        run: |
+          echo "## Monitoring Report" >> $GITHUB_STEP_SUMMARY
+          echo "**Timestamp:** $(date)" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Components Deployed:" >> $GITHUB_STEP_SUMMARY
+          echo "- ✅ Prometheus (metrics collection)" >> $GITHUB_STEP_SUMMARY
+          echo "- ✅ Grafana (visualization)" >> $GITHUB_STEP_SUMMARY
+          echo "- ✅ Application with monitoring enabled" >> $GITHUB_STEP_SUMMARY
+          echo "- ✅ ServiceMonitor for metrics scraping" >> $GITHUB_STEP_SUMMARY
+          echo "- ✅ PrometheusRule for alerting" >> $GITHUB_STEP_SUMMARY
+
+      - name: Cleanup monitoring cluster
+        if: always()
+        run: |
+          kind delete cluster --name monitoring-cluster || true
+
   # Semantic Release Job
   release:
     runs-on: ubuntu-latest
-    needs: [test, build, kubernetes-deploy]
+    needs: [test, build, kubernetes-deploy, security-scan, monitoring]
     if: always() && (needs.test.result == 'success' && needs.build.result == 'success' && needs.kubernetes-deploy.result == 'success')
     permissions:
       contents: write
