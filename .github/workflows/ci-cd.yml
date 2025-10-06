@@ -389,6 +389,8 @@ jobs:
           helm install interview-app ./helm/interview-app \
             --set monitoring.enabled=false \
             --set service.type=ClusterIP \
+            --set image.repository=interview-app \
+            --set image.tag=latest \
             --debug
 
           echo "Checking Helm deployment status..."
@@ -406,6 +408,7 @@ jobs:
             echo "Deployment failed, checking detailed status:"
             kubectl describe deployment interview-app
             kubectl get pods -l app.kubernetes.io/name=interview-app
+            kubectl describe pods -l app.kubernetes.io/name=interview-app
             kubectl get events --sort-by=.metadata.creationTimestamp
             echo "Checking all pods in all namespaces:"
             kubectl get pods --all-namespaces
