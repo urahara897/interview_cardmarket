@@ -254,7 +254,7 @@ jobs:
 
       - name: Generate automated release and changelog
         run: |
-          # Configure semantic release with comprehensive changelog generation
+          # Create a robust semantic release configuration that handles date issues
           cat > .releaserc.json << 'EOF'
           {
             "branches": ["main"],
@@ -278,19 +278,29 @@ jobs:
               ["@semantic-release/release-notes-generator", {
                 "preset": "conventionalcommits",
                 "writerOpts": {
-                  "commitsSort": ["subject", "scope"]
+                  "commitsSort": ["subject", "scope"],
+                  "commitPartial": "**{{type}}:** {{subject}} {{#if scope}}*{{scope}}*{{/if}}"
                 }
               }],
-              "@semantic-release/changelog",
+              ["@semantic-release/changelog", {
+                "changelogFile": "CHANGELOG.md"
+              }],
               "@semantic-release/github",
-              "@semantic-release/git"
+              ["@semantic-release/git", {
+                "assets": ["CHANGELOG.md", "package.json"],
+                "message": "chore(release): ${nextRelease.version} [skip ci]\n\n${nextRelease.notes}"
+              }]
             ]
           }
           EOF
 
+          # Set environment variables to handle potential date parsing issues
+          export CONVENTIONAL_COMMITS_PARSER_OPTIONS='{"headerPattern": "^(\w*)(?:\(([^)]*)\))?: (.*)$", "headerCorrespondence": ["type", "scope", "subject"]}'
+
           # Execute semantic release with comprehensive configuration
           # This will analyze commits, generate changelog, create GitHub release, and update version tags
-          npx semantic-release
+          echo "Running semantic release analysis..."
+          npx semantic-release --debug
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
