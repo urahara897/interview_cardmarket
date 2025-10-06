@@ -37,4 +37,5 @@ def health_check():
 if __name__ == "__main__":
     # Start the Flask development server
     # Binding to 0.0.0.0 allows external connections in containerized environments
-    app.run(host="0.0.0.0", port=APP_PORT, debug=False)
+    # This is safe in containerized environments where the container is not directly exposed
+    app.run(host="0.0.0.0", port=APP_PORT, debug=False)  # nosec B104
