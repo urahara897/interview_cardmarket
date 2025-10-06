@@ -1,0 +1,4 @@
+# Ignore Flask host binding security warning for containerized environments
+# This is safe because the container is not directly exposed to the internet
+# and is required for Kubernetes port forwarding to work properly
+python.flask.security.audit.app-run-param-config.avoid_app_run_with_bad_host

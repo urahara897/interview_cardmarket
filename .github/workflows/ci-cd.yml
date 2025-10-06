@@ -292,6 +292,7 @@ jobs:
             p/python
             p/docker
             p/kubernetes
+          exclude-rule: python.flask.security.audit.app-run-param-config.avoid_app_run_with_bad_host
 
       - name: Run Kube-score
         run: |
@@ -402,6 +403,14 @@ jobs:
           echo "Checking deployment status..."
           kubectl get deployments
           kubectl get pods
+
+          echo "Waiting 10 seconds for pods to be created..."
+          sleep 10
+
+          echo "Checking pod status after wait..."
+          kubectl get pods -l app.kubernetes.io/name=interview-app
+          kubectl describe pods -l app.kubernetes.io/name=interview-app
+          kubectl get events --sort-by=.metadata.creationTimestamp
 
           echo "Waiting for deployment to be available..."
           kubectl wait --for=condition=available --timeout=300s deployment/interview-app || {
