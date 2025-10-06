@@ -251,27 +251,36 @@ jobs:
           git config --global user.name "github-actions[bot]"
           git config --global user.email "github-actions[bot]@users.noreply.github.com"
 
-      - name: Fix commit dates
-        run: |
-          # Fix any invalid commit dates that might cause semantic-release to fail
-          git log --pretty=format:"%H %ci" | head -20 | while read hash date; do
-            if [[ "$date" == "1970-01-01"* ]] || [[ -z "$date" ]]; then
-              echo "Fixing invalid date for commit $hash"
-              # Use git filter-branch to fix the date
-              git filter-branch --force --env-filter "
-                if [ \$GIT_COMMIT = '$hash' ]; then
-                  export GIT_COMMITTER_DATE='$(date -R)'
-                  export GIT_AUTHOR_DATE='$(date -R)'
-                fi
-              " -- HEAD~20..HEAD 2>/dev/null || true
-            fi
-          done || true
-
       - name: Create release
         run: |
-          # Use the existing .releaserc.json with a more tolerant approach
-          # Set environment variables to handle date parsing issues
-          export CONVENTIONAL_COMMITS_PARSER_OPTIONS='{"headerPattern": "^(\w*)(?:\(([^)]*)\))?: (.*)$", "headerCorrespondence": ["type", "scope", "subject"]}'
+          # Create a minimal config that skips problematic plugins
+          cat > .releaserc.json << 'EOF'
+          {
+            "branches": ["main"],
+            "plugins": [
+              ["@semantic-release/commit-analyzer", {
+                "preset": "conventionalcommits",
+                "releaseRules": [
+                  {"type": "feat", "release": "minor"},
+                  {"type": "fix", "release": "patch"},
+                  {"type": "perf", "release": "patch"},
+                  {"type": "revert", "release": "patch"},
+                  {"type": "docs", "release": false},
+                  {"type": "style", "release": false},
+                  {"type": "chore", "release": false},
+                  {"type": "refactor", "release": "patch"},
+                  {"type": "test", "release": false},
+                  {"type": "build", "release": "patch"},
+                  {"type": "ci", "release": false}
+                ]
+              }],
+              "@semantic-release/github",
+              "@semantic-release/git"
+            ]
+          }
+          EOF
+
+          # Run semantic release with minimal config
           npx semantic-release
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
