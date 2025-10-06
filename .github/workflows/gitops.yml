@@ -1,11 +1,14 @@
 name: GitOps Deployment
 
 on:
-  push:
-    branches: [main]
-    paths:
-      - "helm/**"
+  # Disabled - functionality moved to ci-cd.yml
   workflow_dispatch:
+    inputs:
+      enable_gitops:
+        description: "Enable GitOps deployment"
+        required: false
+        default: true
+        type: boolean
 
 env:
   IMAGE_NAME: interview-app
