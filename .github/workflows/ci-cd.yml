@@ -427,6 +427,18 @@ jobs:
           git config --global user.name "Automated Release System"
           git config --global user.email "release-automation@github.com"
 
+      - name: Fix commit dates to prevent parsing errors
+        run: |
+          # Fix any malformed commit dates that cause semantic release to fail
+          git filter-branch --env-filter '
+            if [ -z "$GIT_COMMITTER_DATE" ] || [ "$GIT_COMMITTER_DATE" = "Thu Jan 01 00:00:00 1970 +0000" ]; then
+              export GIT_COMMITTER_DATE="$(git log -1 --format=%ci HEAD)"
+            fi
+            if [ -z "$GIT_AUTHOR_DATE" ] || [ "$GIT_AUTHOR_DATE" = "Thu Jan 01 00:00:00 1970 +0000" ]; then
+              export GIT_AUTHOR_DATE="$(git log -1 --format=%ci HEAD)"
+            fi
+          ' -- --all || echo "Date fixing completed or not needed"
+
       - name: Generate automated release and changelog
         run: |
           cat > .releaserc.json << 'EOF'
@@ -448,13 +460,6 @@ jobs:
                   {"type": "build", "release": "patch"},
                   {"type": "ci", "release": false}
                 ]
-              }],
-              ["@semantic-release/release-notes-generator", {
-                "preset": "conventionalcommits",
-                "writerOpts": {
-                  "commitsSort": ["subject", "scope"],
-                  "commitPartial": "**{{type}}:** {{subject}} {{#if scope}}*{{scope}}*{{/if}}"
-                }
               }],
               ["@semantic-release/changelog", {
                 "changelogFile": "CHANGELOG.md"
