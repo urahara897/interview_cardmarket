@@ -336,19 +336,32 @@ jobs:
           # Insert the new changelog entry after the [Unreleased] section
           sed -i "/## \[Unreleased\]/r changelog_entry.md" CHANGELOG.md
           
-          # Update the [Unreleased] section to be empty
-          sed -i '/## \[Unreleased\]/,/^## \[/c\
-## [Unreleased]\
-\
-### Added\
-\
-### Changed\
-\
-### Fixed\
-\
-### Security\
-\
-## [' CHANGELOG.md
+          # Create a new CHANGELOG.md with updated [Unreleased] section
+          cat > new_changelog.md << 'EOF'
+# Changelog
+
+All notable changes to this project will be documented in this file.
+
+The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
+and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+
+## [Unreleased]
+
+### Added
+
+### Changed
+
+### Fixed
+
+### Security
+
+EOF
+
+          # Append the existing changelog content (excluding the header and [Unreleased] section)
+          tail -n +15 CHANGELOG.md >> new_changelog.md
+          
+          # Replace the original changelog
+          mv new_changelog.md CHANGELOG.md
 
           # Clean up temporary file
           rm changelog_entry.md
