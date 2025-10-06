@@ -1,13 +1,16 @@
 name: Semantic Release
 
 on:
-    push:
+    workflow_run:
+        workflows: ["CI/CD Pipeline with Kubernetes"]
+        types: [completed]
         branches: [main]
     workflow_dispatch:
 
 jobs:
     release:
         runs-on: ubuntu-latest
+        if: ${{ github.event.workflow_run.conclusion == 'success' }}
         permissions:
             contents: write
             issues: write
