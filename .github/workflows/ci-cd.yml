@@ -61,7 +61,8 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
-  kubernetes-deploy:
+  # Kubernetes Test Environment Deployment
+  kubernetes-test-deploy:
     needs: build
     runs-on: ubuntu-latest
     if: github.ref == 'refs/heads/main' || github.event_name == 'release'
@@ -144,13 +145,13 @@ jobs:
         run: |
           # Remove existing Helm release if it exists
           helm uninstall interview-app || echo "No existing release to uninstall"
-          
+
           # Clean up any existing resources that might conflict
           kubectl delete serviceaccount interview-app || echo "ServiceAccount not found"
           kubectl delete configmap interview-app-config || echo "ConfigMap not found"
           kubectl delete service interview-app || echo "Service not found"
           kubectl delete deployment interview-app || echo "Deployment not found"
-          
+
           # Wait a moment for cleanup
           sleep 5
 
@@ -231,11 +232,11 @@ jobs:
           echo "### Resources Deployed:" >> $GITHUB_STEP_SUMMARY
           kubectl get all -o wide >> $GITHUB_STEP_SUMMARY
 
-  # Monitoring and Performance Testing Job
+  # Monitoring and Performance Testing on Test Environment
   monitoring:
     runs-on: ubuntu-latest
-    needs: [kubernetes-deploy]
-    if: always() && needs.kubernetes-deploy.result == 'success'
+    needs: [kubernetes-test-deploy]
+    if: always() && needs.kubernetes-test-deploy.result == 'success'
 
     steps:
       - name: Checkout code
@@ -381,11 +382,11 @@ jobs:
           echo "**Timestamp:** $(date)" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "### Components Deployed:" >> $GITHUB_STEP_SUMMARY
-          echo "- ✅ Prometheus (metrics collection)" >> $GITHUB_STEP_SUMMARY
-          echo "- ✅ Grafana (visualization)" >> $GITHUB_STEP_SUMMARY
-          echo "- ✅ Application with monitoring enabled" >> $GITHUB_STEP_SUMMARY
-          echo "- ✅ ServiceMonitor for metrics scraping" >> $GITHUB_STEP_SUMMARY
-          echo "- ✅ PrometheusRule for alerting" >> $GITHUB_STEP_SUMMARY
+          echo "- Prometheus (metrics collection)" >> $GITHUB_STEP_SUMMARY
+          echo "- Grafana (visualization)" >> $GITHUB_STEP_SUMMARY
+          echo "- Application with monitoring enabled" >> $GITHUB_STEP_SUMMARY
+          echo "- ServiceMonitor for metrics scraping" >> $GITHUB_STEP_SUMMARY
+          echo "- PrometheusRule for alerting" >> $GITHUB_STEP_SUMMARY
 
       - name: Cleanup monitoring cluster
         if: always()
@@ -395,8 +396,8 @@ jobs:
   # Semantic Release Job
   release:
     runs-on: ubuntu-latest
-    needs: [test, build, kubernetes-deploy, monitoring]
-    if: always() && (needs.test.result == 'success' && needs.build.result == 'success' && needs.kubernetes-deploy.result == 'success')
+    needs: [test, build, kubernetes-test-deploy, monitoring]
+    if: always() && (needs.test.result == 'success' && needs.build.result == 'success' && needs.kubernetes-test-deploy.result == 'success')
     permissions:
       contents: write
       issues: write
@@ -460,7 +461,7 @@ jobs:
               }],
               "@semantic-release/github",
               ["@semantic-release/git", {
-                "assets": ["CHANGELOG.md", "package.json"],
+                "assets": ["CHANGELOG.md"],
                 "message": "chore(release): ${nextRelease.version} [skip ci]\n\n${nextRelease.notes}"
               }]
             ]
@@ -468,7 +469,7 @@ jobs:
           EOF
 
           export CONVENTIONAL_COMMITS_PARSER_OPTIONS='{"headerPattern": "^(\w*)(?:\(([^)]*)\))?: (.*)$", "headerCorrespondence": ["type", "scope", "subject"]}'
-          
+
           echo "Running semantic release analysis..."
           npx semantic-release --debug
         env:
@@ -482,150 +483,7 @@ jobs:
 
           sed -i "s/^version:.*/version: $NEW_VERSION/" helm/interview-app/Chart.yaml
           sed -i "s/^  tag:.*/  tag: \"$NEW_VERSION\"/" helm/interview-app/values.yaml
-          
-          git config --local user.email "release-automation@github.com"
-          git config --local user.name "Automated Release System"
-          git add helm/interview-app/Chart.yaml helm/interview-app/values.yaml CHANGELOG.md
-          git commit -m "chore: synchronize Helm chart version to $NEW_VERSION and update changelog [skip ci]"
-          git push
 
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-          token: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: "18"
-
-      - name: Install semantic release
-        run: |
-          npm install -g semantic-release
-          npm install -g @semantic-release/changelog
-          npm install -g @semantic-release/git
-          npm install -g conventional-changelog-conventionalcommits
-
-      - name: Configure Git for automated releases
-        run: |
-          # Set up Git identity for automated commit operations
-          git config --global user.name "Automated Release System"
-          git config --global user.email "release-automation@github.com"
-
-      - name: Generate automated release and changelog
-        run: |
-          # Create a simplified semantic release configuration that avoids date parsing issues
-          cat > .releaserc.json << 'EOF'
-          {
-            "branches": ["main"],
-            "plugins": [
-              ["@semantic-release/commit-analyzer", {
-                "preset": "conventionalcommits",
-                "releaseRules": [
-                  {"type": "feat", "release": "minor"},
-                  {"type": "fix", "release": "patch"},
-                  {"type": "perf", "release": "patch"},
-                  {"type": "revert", "release": "patch"},
-                  {"type": "docs", "release": false},
-                  {"type": "style", "release": false},
-                  {"type": "chore", "release": false},
-                  {"type": "refactor", "release": "patch"},
-                  {"type": "test", "release": false},
-                  {"type": "build", "release": "patch"},
-                  {"type": "ci", "release": false}
-                ]
-              }],
-              "@semantic-release/github",
-              "@semantic-release/git"
-            ]
-          }
-          EOF
-
-          # Execute semantic release without problematic plugins
-          # This will create releases and tags without detailed release notes
-          echo "Running semantic release analysis..."
-          npx semantic-release --debug
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Create changelog entry
-        if: steps.release.outputs.new_release_published == 'true'
-        run: |
-          # Extract the newly created version from semantic release
-          NEW_VERSION=${{ steps.release.outputs.new_release_version }}
-          echo "Creating changelog entry for version: $NEW_VERSION"
-
-          # Get the current date
-          RELEASE_DATE=$(date +%Y-%m-%d)
-
-          # Create a temporary changelog entry file
-          echo "## [$NEW_VERSION] - $RELEASE_DATE" > temp_changelog.md
-          echo "" >> temp_changelog.md
-          echo "### Added" >> temp_changelog.md
-          echo "- Complete GitOps setup with Kubernetes, Helm, and CI/CD" >> temp_changelog.md
-          echo "- Implemented Kubernetes cluster with Kind" >> temp_changelog.md
-          echo "- Created Flask application with Docker containerization" >> temp_changelog.md
-          echo "- Set up Helm charts for Infrastructure as Code" >> temp_changelog.md
-          echo "- Configured GitHub Actions CI/CD pipeline" >> temp_changelog.md
-          echo "- Added GitOps workflow with ArgoCD" >> temp_changelog.md
-          echo "- Implemented semantic versioning and automated releases" >> temp_changelog.md
-          echo "- Added comprehensive testing and health checks" >> temp_changelog.md
-          echo "- Configured automated deployment and monitoring" >> temp_changelog.md
-          echo "" >> temp_changelog.md
-          echo "### Fixed" >> temp_changelog.md
-          echo "- Multiple fixes for CI/CD pipeline issues" >> temp_changelog.md
-          echo "- Resolved semantic release configuration problems" >> temp_changelog.md
-          echo "- Fixed Docker image building and deployment issues" >> temp_changelog.md
-          echo "- Enhanced code documentation and removed AI references" >> temp_changelog.md
-          echo "- Improved security with non-root container user" >> temp_changelog.md
-          echo "- Added dedicated health check endpoints" >> temp_changelog.md
-          echo "" >> temp_changelog.md
-          echo "### Changed" >> temp_changelog.md
-          echo "- Migrated from minikube to Kind for better CI/CD compatibility" >> temp_changelog.md
-          echo "- Enhanced Kubernetes manifests with proper labels and selectors" >> temp_changelog.md
-          echo "- Improved Dockerfile with security best practices" >> temp_changelog.md
-          echo "- Updated README with more descriptive and professional language" >> temp_changelog.md
-          echo "" >> temp_changelog.md
-          echo "### Security" >> temp_changelog.md
-          echo "- Added non-root user support in Dockerfile" >> temp_changelog.md
-          echo "- Implemented resource limits and requests" >> temp_changelog.md
-          echo "- Added health checks for better reliability" >> temp_changelog.md
-          echo "- Container image scanning in CI pipeline" >> temp_changelog.md
-          echo "" >> temp_changelog.md
-
-          # Insert the changelog entry after the [Unreleased] section
-          sed -i "/## \[Unreleased\]/r temp_changelog.md" CHANGELOG.md
-
-          # Clean up temporary file
-          rm temp_changelog.md
-
-          echo "Changelog updated successfully!"
-
-      - name: Log release information
-        if: steps.release.outputs.new_release_published == 'true'
-        run: |
-          # Extract the newly created version from semantic release
-          NEW_VERSION=${{ steps.release.outputs.new_release_version }}
-          echo "Release $NEW_VERSION has been created successfully!"
-          echo "GitHub release: https://github.com/${{ github.repository }}/releases/tag/$NEW_VERSION"
-          echo "Changelog has been updated in CHANGELOG.md"
-
-      - name: Synchronize Helm chart version with release
-        if: steps.release.outputs.new_release_published == 'true'
-        run: |
-          # Extract the newly created version from semantic release
-          NEW_VERSION=${{ steps.release.outputs.new_release_version }}
-          echo "Synchronizing Helm chart version to match release: $NEW_VERSION"
-
-          # Update Chart.yaml with the new version number
-          sed -i "s/^version:.*/version: $NEW_VERSION/" helm/interview-app/Chart.yaml
-
-          # Update values.yaml with the new image tag
-          sed -i "s/^  tag:.*/  tag: \"$NEW_VERSION\"/" helm/interview-app/values.yaml
-
-          # Commit and push the version synchronization changes
           git config --local user.email "release-automation@github.com"
           git config --local user.name "Automated Release System"
           git add helm/interview-app/Chart.yaml helm/interview-app/values.yaml CHANGELOG.md
