@@ -42,6 +42,12 @@ def test_hello_endpoint_with_custom_message(client):
 
 def test_health_check(client):
     """Test that the application responds to health checks."""
+    response = client.get('/health')
+    assert response.status_code == 200  # nosec B101
+    assert b'Application is healthy' in response.data  # nosec B101
+
+def test_main_endpoint(client):
+    """Test that the main endpoint works correctly."""
     response = client.get('/')
     assert response.status_code == 200  # nosec B101
     assert response.headers['Content-Type'] == 'text/html; charset=utf-8'  # nosec B101

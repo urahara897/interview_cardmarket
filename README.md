@@ -1,4 +1,4 @@
-# Kubernetes DevOps Interview Project
+# DevOps Interview Project
 
 This project demonstrates how to build a complete DevOps pipeline from scratch. It shows you how to take a simple web application and deploy it to Kubernetes using modern tools and practices. Think of it as a practical example of how real-world applications get built, tested, and deployed automatically.
 
