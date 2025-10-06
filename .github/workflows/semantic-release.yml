@@ -1,9 +1,8 @@
 name: Semantic Release
 
 on:
-    # Disabled for now - focus on GitOps deployment
-    # push:
-    #     branches: [main]
+    push:
+        branches: [main]
     workflow_dispatch:
 
 jobs:
