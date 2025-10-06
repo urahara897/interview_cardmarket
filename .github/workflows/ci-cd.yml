@@ -298,42 +298,40 @@ jobs:
           # Get the current date
           RELEASE_DATE=$(date +%Y-%m-%d)
           
-          # Create a changelog entry for the new release
-          cat > changelog_entry.md << EOF
-## [$NEW_VERSION] - $RELEASE_DATE
-
-### Added
-- Complete GitOps setup with Kubernetes, Helm, and CI/CD
-- Implemented Kubernetes cluster with Kind
-- Created Flask application with Docker containerization
-- Set up Helm charts for Infrastructure as Code
-- Configured GitHub Actions CI/CD pipeline
-- Added GitOps workflow with ArgoCD
-- Implemented semantic versioning and automated releases
-- Added comprehensive testing and health checks
-- Configured automated deployment and monitoring
-
-### Fixed
-- Multiple fixes for CI/CD pipeline issues
-- Resolved semantic release configuration problems
-- Fixed Docker image building and deployment issues
-- Enhanced code documentation and removed AI references
-- Improved security with non-root container user
-- Added dedicated health check endpoints
-
-### Changed
-- Migrated from minikube to Kind for better CI/CD compatibility
-- Enhanced Kubernetes manifests with proper labels and selectors
-- Improved Dockerfile with security best practices
-- Updated README with more descriptive and professional language
-
-### Security
-- Added non-root user support in Dockerfile
-- Implemented resource limits and requests
-- Added health checks for better reliability
-- Container image scanning in CI pipeline
-
-EOF
+          # Create a simple changelog entry
+          echo "## [$NEW_VERSION] - $RELEASE_DATE" > changelog_entry.md
+          echo "" >> changelog_entry.md
+          echo "### Added" >> changelog_entry.md
+          echo "- Complete GitOps setup with Kubernetes, Helm, and CI/CD" >> changelog_entry.md
+          echo "- Implemented Kubernetes cluster with Kind" >> changelog_entry.md
+          echo "- Created Flask application with Docker containerization" >> changelog_entry.md
+          echo "- Set up Helm charts for Infrastructure as Code" >> changelog_entry.md
+          echo "- Configured GitHub Actions CI/CD pipeline" >> changelog_entry.md
+          echo "- Added GitOps workflow with ArgoCD" >> changelog_entry.md
+          echo "- Implemented semantic versioning and automated releases" >> changelog_entry.md
+          echo "- Added comprehensive testing and health checks" >> changelog_entry.md
+          echo "- Configured automated deployment and monitoring" >> changelog_entry.md
+          echo "" >> changelog_entry.md
+          echo "### Fixed" >> changelog_entry.md
+          echo "- Multiple fixes for CI/CD pipeline issues" >> changelog_entry.md
+          echo "- Resolved semantic release configuration problems" >> changelog_entry.md
+          echo "- Fixed Docker image building and deployment issues" >> changelog_entry.md
+          echo "- Enhanced code documentation and removed AI references" >> changelog_entry.md
+          echo "- Improved security with non-root container user" >> changelog_entry.md
+          echo "- Added dedicated health check endpoints" >> changelog_entry.md
+          echo "" >> changelog_entry.md
+          echo "### Changed" >> changelog_entry.md
+          echo "- Migrated from minikube to Kind for better CI/CD compatibility" >> changelog_entry.md
+          echo "- Enhanced Kubernetes manifests with proper labels and selectors" >> changelog_entry.md
+          echo "- Improved Dockerfile with security best practices" >> changelog_entry.md
+          echo "- Updated README with more descriptive and professional language" >> changelog_entry.md
+          echo "" >> changelog_entry.md
+          echo "### Security" >> changelog_entry.md
+          echo "- Added non-root user support in Dockerfile" >> changelog_entry.md
+          echo "- Implemented resource limits and requests" >> changelog_entry.md
+          echo "- Added health checks for better reliability" >> changelog_entry.md
+          echo "- Container image scanning in CI pipeline" >> changelog_entry.md
+          echo "" >> changelog_entry.md
 
           # Insert the new changelog entry after the [Unreleased] section
           sed -i "/## \[Unreleased\]/r changelog_entry.md" CHANGELOG.md
