@@ -1,6 +1,38 @@
 # DevOps Interview Project
 
-This project demonstrates how to build a complete DevOps pipeline from scratch. It shows you how to take a simple web application and deploy it to Kubernetes using modern tools and practices. Think of it as a practical example of how real-world applications get built, tested, and deployed automatically.
+This repository contains tasks we ask candidates to complete during DevOps interviews. It's designed to showcase your skills in building complete DevOps pipelines from scratch.
+
+## For Interview Candidates
+
+**Please fork this repository and work in your own forked version.** You can solve these tasks in a simple way or make them as sophisticated as you'd like - both approaches are valid! During the interview, you'll guide us through your solution, explaining your decisions and technical concepts as we go.
+
+### What You Need to Build
+
+1. **Set up a Kubernetes cluster** - Use whatever you prefer (Kind, Minikube, k3s, etc.)
+2. **Build and release an app** - Create your own Dockerfile and build the application
+3. **Create a deployment** - Deploy your app to Kubernetes
+4. **Extras (if you want to impress):** Infrastructure as Code, GitOps, semantic versioning, and changelog
+
+**No paid services required** - everything can be done with free tools!
+
+## Example Solution (This Repository)
+
+This repository contains a complete example solution that demonstrates all the required tasks plus the extras. It shows how to take a simple web application and deploy it to Kubernetes using modern tools and practices.
+
+### What This Example Includes
+
+- **Kubernetes cluster setup** using Kind (Kubernetes in Docker)
+- **Custom application** with Dockerfile built from scratch
+- **Automated releases** with semantic versioning
+- **Kubernetes deployment** with proper configuration
+- **Infrastructure as Code** using Helm charts
+- **GitOps workflow** for continuous deployment
+- **Automated testing** and CI/CD pipeline
+- **Changelog** with automated updates
+
+## What This Project Demonstrates
+
+This project shows how to take a simple web application and deploy it to Kubernetes using modern tools and practices. Think of it as a practical example of how real-world applications get built, tested, and deployed automatically.
 
 ## What's Inside
 
