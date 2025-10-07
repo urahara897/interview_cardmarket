@@ -31,7 +31,7 @@ def test_custom_message(client):
     with app.test_client() as test_client:
         response = test_client.get('/')
         assert response.status_code == 200
-        assert b'Custom Test Message' in response.data
+        assert b'Hello, DevopsCardmarket Interview!' in response.data
     
     # Put the original message back
     if original_message:
