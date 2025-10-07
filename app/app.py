@@ -1,42 +1,28 @@
 """
-Flask Web Application for Kubernetes DevOps Interview Project
-
-This microservice provides a simple HTTP endpoint that returns a configurable
-message, demonstrating containerized application deployment patterns.
+A simple web app for the DevOps interview project.
+Just says hello and shows it's working.
 """
 
 from flask import Flask
 import os
 
-# Initialize Flask application instance
+# Create our web app
 app = Flask(__name__)
 
-# Configuration from environment variables with sensible defaults
+# What message to show (can be changed with environment variables)
 APP_MESSAGE = os.getenv("APP_MESSAGE", "Hello, DevopsCardmarket Interview!")
 APP_PORT = int(os.getenv("APP_PORT", 8080))
 
 @app.route("/")
-def health_endpoint():
-    """
-    Primary application endpoint returning the configured message.
-    
-    This endpoint serves as both a health check and the main application
-    functionality, demonstrating a simple microservice pattern.
-    """
+def main_page():
+    """The main page that shows our message."""
     return APP_MESSAGE
 
 @app.route("/health")
 def health_check():
-    """
-    Dedicated health check endpoint for Kubernetes liveness and readiness probes.
-    
-    Returns a simple status message indicating the application is running.
-    """
+    """A simple health check for Kubernetes to know the app is running."""
     return "Application is healthy", 200
 
 if __name__ == "__main__":
-    # Start the Flask development server
-    # Binding to 0.0.0.0 allows external connections in containerized environments
-    # This is safe in containerized environments where the container is not directly exposed
-    # and is required for Kubernetes port forwarding to work properly
+    # Run the app on all network interfaces so Kubernetes can reach it
     app.run(host="0.0.0.0", port=APP_PORT, debug=False)  # nosec B104, semgrep:ignore python.flask.security.audit.app-run-param-config.avoid_app_run_with_bad_host

@@ -83,7 +83,7 @@ jobs:
           chmod +x ./kind
           sudo mv ./kind /usr/local/bin/kind
 
-          # Create Kind cluster
+          # Create a local Kubernetes cluster
           kind create cluster --name interview-cluster --config - <<EOF
           kind: Cluster
           apiVersion: kind.x-k8s.io/v1alpha4
@@ -109,18 +109,18 @@ jobs:
 
       - name: Prepare application container
         run: |
-          # Build the image locally
+          # Build our app image
           docker build -t ${{ env.IMAGE_NAME }}:latest ./app
-          # Load it into Kind
+          # Put it in the Kind cluster
           kind load docker-image ${{ env.IMAGE_NAME }}:latest --name interview-cluster
 
       - name: Configure deployment settings
         run: |
-          # Update the Helm values to use the correct image
+          # Tell Helm to use our local image
           sed -i "s|repository: ghcr.io/your-username/interview-app|repository: ${{ env.IMAGE_NAME }}|g" helm/interview-app/values.yaml
           sed -i "s|tag: \".*\"|tag: \"latest\"|g" helm/interview-app/values.yaml
 
-          # Show the updated values for debugging
+          # Show what we changed
           echo "=== Updated Helm values ==="
           cat helm/interview-app/values.yaml | grep -A 5 "image:"
 
@@ -130,23 +130,23 @@ jobs:
 
       - name: Validate Helm chart
         run: |
-          echo "=== Validating Helm chart ==="
+          echo "=== Checking Helm chart ==="
           helm lint ./helm/interview-app
 
-          echo "=== Testing Helm template rendering ==="
+          echo "=== Testing Helm templates ==="
           helm template interview-app ./helm/interview-app
 
       - name: Create ServiceAccount
         run: |
-          # Create the service account that Helm expects
+          # Make sure the service account exists
           kubectl create serviceaccount interview-app || echo "ServiceAccount already exists"
 
       - name: Clean up existing resources
         run: |
-          # Remove existing Helm release if it exists
+          # Remove any old deployments
           helm uninstall interview-app || echo "No existing release to uninstall"
 
-          # Clean up any existing resources that might conflict
+          # Clean up conflicting resources
           kubectl delete serviceaccount interview-app || echo "ServiceAccount not found"
           kubectl delete configmap interview-app-config || echo "ConfigMap not found"
           kubectl delete service interview-app || echo "Service not found"
@@ -157,31 +157,31 @@ jobs:
 
       - name: Deploy with Helm
         run: |
-          # Deploy without waiting first to see if it works
+          # Deploy our app
           helm install interview-app ./helm/interview-app
 
-          # Check what was created
-          echo "=== Checking deployed resources ==="
+          # See what got created
+          echo "=== What was deployed ==="
           kubectl get all
 
-          # Check pod status
-          echo "=== Checking pod status ==="
+          # Check if pods are running
+          echo "=== Pod status ==="
           kubectl get pods -o wide
 
-          # Check events for any errors
-          echo "=== Checking events ==="
+          # Look for any problems
+          echo "=== Recent events ==="
           kubectl get events --sort-by='.lastTimestamp'
 
-          # Check replicaset details
-          echo "=== Checking replicaset details ==="
+          # Check pod details
+          echo "=== Pod details ==="
           kubectl describe replicaset -l app.kubernetes.io/name=interview-app
 
-          # Check pod logs if any pods are failing
-          echo "=== Checking pod logs ==="
+          # Check logs
+          echo "=== App logs ==="
           kubectl logs -l app.kubernetes.io/name=interview-app || echo "No logs yet"
 
-          # Now wait for deployment
-          echo "=== Waiting for deployment to be ready ==="
+          # Wait for everything to be ready
+          echo "=== Waiting for deployment ==="
           kubectl rollout status deployment/interview-app --timeout=120s
 
       - name: Test deployment
@@ -190,26 +190,26 @@ jobs:
           kubectl get services
           kubectl get configmaps
 
-          # Test the application
+          # Test our app
           kubectl port-forward service/interview-app 8080:80 &
           PF_PID=$!
           sleep 5
 
-          # Wait for port-forward to be ready and test the response
+          # Try to reach the app
           for i in {1..10}; do
             if curl -f http://localhost:8080 >/dev/null 2>&1; then
-              echo "Health check passed! Application is responding."
+              echo "App is working!"
               
-              # Get the actual response content
-              echo "=== App Response Content ==="
+              # Show what the app returns
+              echo "=== App Response ==="
               curl -s http://localhost:8080
               echo ""
               
-              # Verify the expected message
+              # Check if we get the right message
               if curl -s http://localhost:8080 | grep -q "Hello, DevopsCardmarket Interview"; then
-                echo "Correct message displayed: 'Hello, DevopsCardmarket Interview'"
+                echo "Got the right message!"
               else
-                echo "Unexpected message content"
+                echo "Wrong message content"
                 curl -s http://localhost:8080
               fi
               break
@@ -429,52 +429,33 @@ jobs:
 
       - name: Fix commit dates to prevent parsing errors
         run: |
-          # Fix any malformed commit dates that cause semantic release to fail
+          # Only fix commits with problematic 1970 dates, leave others alone
+          # This prevents RangeError: Invalid time value without changing good commits
           git filter-branch --env-filter '
-            if [ -z "$GIT_COMMITTER_DATE" ] || [ "$GIT_COMMITTER_DATE" = "Thu Jan 01 00:00:00 1970 +0000" ]; then
-              export GIT_COMMITTER_DATE="$(git log -1 --format=%ci HEAD)"
+            if [ "$GIT_COMMITTER_DATE" = "Thu Jan 01 00:00:00 1970 +0000" ]; then
+              # Use the current date for broken commits
+              export GIT_COMMITTER_DATE="$(date -u +%Y-%m-%dT%H:%M:%S+00:00)"
             fi
-            if [ -z "$GIT_AUTHOR_DATE" ] || [ "$GIT_AUTHOR_DATE" = "Thu Jan 01 00:00:00 1970 +0000" ]; then
-              export GIT_AUTHOR_DATE="$(git log -1 --format=%ci HEAD)"
+            if [ "$GIT_AUTHOR_DATE" = "Thu Jan 01 00:00:00 1970 +0000" ]; then
+              # Use the current date for broken commits
+              export GIT_AUTHOR_DATE="$(date -u +%Y-%m-%dT%H:%M:%S+00:00)"
             fi
           ' -- --all || echo "Date fixing completed or not needed"
 
+          # Show recent commits for debugging
+          echo "=== Recent commits after fixing ==="
+          git log --oneline -10
+
       - name: Generate automated release and changelog
         run: |
-          cat > .releaserc.json << 'EOF'
-          {
-            "branches": ["main"],
-            "plugins": [
-              ["@semantic-release/commit-analyzer", {
-                "preset": "conventionalcommits",
-                "releaseRules": [
-                  {"type": "feat", "release": "minor"},
-                  {"type": "fix", "release": "patch"},
-                  {"type": "perf", "release": "patch"},
-                  {"type": "revert", "release": "patch"},
-                  {"type": "docs", "release": false},
-                  {"type": "style", "release": false},
-                  {"type": "chore", "release": false},
-                  {"type": "refactor", "release": "patch"},
-                  {"type": "test", "release": false},
-                  {"type": "build", "release": "patch"},
-                  {"type": "ci", "release": false}
-                ]
-              }],
-              ["@semantic-release/changelog", {
-                "changelogFile": "CHANGELOG.md"
-              }],
-              "@semantic-release/github",
-              ["@semantic-release/git", {
-                "assets": ["CHANGELOG.md"],
-                "message": "chore(release): ${nextRelease.version} [skip ci]\n\n${nextRelease.notes}"
-              }]
-            ]
-          }
-          EOF
+          # Use the static .releaserc.json file from the repository
+          echo "Using static .releaserc.json configuration"
+          cat .releaserc.json
 
+          # Set environment variables to handle potential date parsing issues
           export CONVENTIONAL_COMMITS_PARSER_OPTIONS='{"headerPattern": "^(\w*)(?:\(([^)]*)\))?: (.*)$", "headerCorrespondence": ["type", "scope", "subject"]}'
 
+          # Run semantic release with the static configuration
           echo "Running semantic release analysis..."
           npx semantic-release --debug
         env:

@@ -1,36 +1,68 @@
 {
+  // Only create releases from the main branch
   "branches": ["main"],
+
+  // List of plugins that handle different parts of the release process
   "plugins": [
     [
+      // This plugin analyzes commit messages to decide what type of release to make
       "@semantic-release/commit-analyzer",
       {
+        // Use conventional commits format (feat:, fix:, etc.)
         "preset": "conventionalcommits",
         "releaseRules": [
+          // New features trigger minor version bumps (1.0.0 → 1.1.0)
           { "type": "feat", "release": "minor" },
+
+          // Bug fixes trigger patch version bumps (1.0.0 → 1.0.1)
           { "type": "fix", "release": "patch" },
+
+          // Performance improvements trigger patch version bumps
           { "type": "perf", "release": "patch" },
+
+          // Reverting changes triggers patch version bumps
           { "type": "revert", "release": "patch" },
+
+          // Documentation changes don't trigger releases
           { "type": "docs", "release": false },
+
+          // Code style changes don't trigger releases
           { "type": "style", "release": false },
+
+          // Maintenance tasks don't trigger releases
           { "type": "chore", "release": false },
+
+          // Code refactoring triggers patch version bumps
           { "type": "refactor", "release": "patch" },
+
+          // Test changes don't trigger releases
           { "type": "test", "release": false },
+
+          // Build system changes trigger patch version bumps
           { "type": "build", "release": "patch" },
+
+          // CI/CD changes don't trigger releases
           { "type": "ci", "release": false }
         ]
       }
     ],
     [
+      // This plugin automatically updates the CHANGELOG.md file
       "@semantic-release/changelog",
       {
+        // Write the changelog to this file
         "changelogFile": "CHANGELOG.md"
       }
     ],
+    // This plugin creates releases on GitHub
     "@semantic-release/github",
     [
+      // This plugin commits changes back to the repository
       "@semantic-release/git",
       {
+        // Files to include in the commit
         "assets": ["CHANGELOG.md"],
+        // Commit message format (skip ci prevents infinite loops)
         "message": "chore(release): ${nextRelease.version} [skip ci]\n\n${nextRelease.notes}"
       }
     ]

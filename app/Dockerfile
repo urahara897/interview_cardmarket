@@ -1,25 +1,23 @@
-# Multi-stage Dockerfile for Flask application
-# Base image: Official Python 3.10 slim variant for minimal attack surface
+# Start with a lightweight Python image
 FROM python:3.10-slim
 
-# Set application working directory
+# Set up our working directory
 WORKDIR /app
 
-# Install Python dependencies from requirements file
-# Using --no-cache-dir to reduce image size and improve security
+# Install the Python packages we need
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Copy application source code into container
+# Copy our app code into the container
 COPY app.py .
 
-# Create non-root user for enhanced security
+# Create a regular user (not root) for security
 RUN useradd --create-home --shell /bin/bash appuser && \
     chown -R appuser:appuser /app
 USER appuser
 
-# Expose application port for external access
+# Tell Docker which port our app uses
 EXPOSE 8080
 
-# Define application startup command
+# Start the app when the container runs
 CMD ["python", "app.py"]

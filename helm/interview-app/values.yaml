@@ -1,4 +1,4 @@
-# Default values for interview-app
+# Settings for our interview app
 replicaCount: 2
 
 image:
@@ -27,7 +27,7 @@ securityContext:
   runAsNonRoot: true
   runAsUser: 1000
 
-# Add volume for temporary files
+# Volume for temporary files
 volumes:
 - name: tmp
   emptyDir: {}
@@ -38,7 +38,7 @@ service:
   targetPort: 8080
   nodePort: 30080
 
-# Ingress disabled for simplicity
+# No ingress needed for this simple setup
 
 resources:
   limits:
