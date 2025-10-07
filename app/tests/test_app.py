@@ -23,7 +23,7 @@ def test_main_page(client):
 def test_custom_message(client):
     """Test that we can change the message with environment variables."""
     original_message = os.environ.get('APP_MESSAGE')
-    os.environ['APP_MESSAGE'] = 'Custom Test Message'
+    os.environ['APP_MESSAGE'] = 'Hello, DevopsCardmarket Interview!'
     
     # Restart the app to pick up the new message
     from app import app
