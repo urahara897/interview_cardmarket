@@ -461,17 +461,24 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Synchronize Helm chart version with release
-        if: steps.release.outputs.new_release_published == 'true'
+      - name: Check if release was created and sync Helm chart
         run: |
-          NEW_VERSION=${{ steps.release.outputs.new_release_version }}
-          echo "Synchronizing Helm chart version to match release: $NEW_VERSION"
+          # Check if semantic release created a new version
+          if git describe --tags --exact-match HEAD 2>/dev/null; then
+            NEW_VERSION=$(git describe --tags --exact-match HEAD)
+            echo "New release detected: $NEW_VERSION"
+            echo "Synchronizing Helm chart version to match release: $NEW_VERSION"
 
-          sed -i "s/^version:.*/version: $NEW_VERSION/" helm/interview-app/Chart.yaml
-          sed -i "s/^  tag:.*/  tag: \"$NEW_VERSION\"/" helm/interview-app/values.yaml
+            # Update Helm chart version
+            sed -i "s/^version:.*/version: $NEW_VERSION/" helm/interview-app/Chart.yaml
+            sed -i "s/^  tag:.*/  tag: \"$NEW_VERSION\"/" helm/interview-app/values.yaml
 
-          git config --local user.email "release-automation@github.com"
-          git config --local user.name "Automated Release System"
-          git add helm/interview-app/Chart.yaml helm/interview-app/values.yaml CHANGELOG.md
-          git commit -m "chore: synchronize Helm chart version to $NEW_VERSION and update changelog [skip ci]"
-          git push
+            # Commit the changes
+            git config --local user.email "release-automation@github.com"
+            git config --local user.name "Automated Release System"
+            git add helm/interview-app/Chart.yaml helm/interview-app/values.yaml
+            git commit -m "chore: synchronize Helm chart version to $NEW_VERSION [skip ci]"
+            git push
+          else
+            echo "No new release created, skipping Helm chart sync"
+          fi

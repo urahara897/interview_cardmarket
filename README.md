@@ -150,6 +150,8 @@ When you push code to GitHub, here's what happens automatically:
 
 All of this happens without you having to click any buttons or run any commands manually!
 
+> **Want to understand how the release system works?** Check out [RELEASE_CONFIG.md](RELEASE_CONFIG.md) for a detailed explanation of how semantic versioning, commit analysis, and automated releases work in this project.
+
 ## What's in This Repository
 
 ```
@@ -168,6 +170,7 @@ interview/
 │   ├── nginx.yaml            # Review comments for yaml files with the correct yaml
 │   └── script.sh             # Review comments for yaml files with the correct script
 ├── CHANGELOG.md              # What changed in each version
+├── RELEASE_CONFIG.md         # How the automated release system works
 └── README.md                 # This file you're reading
 ```
 
