@@ -56,6 +56,21 @@ jobs:
           echo "Waiting for ArgoCD to be ready..."
           kubectl wait --for=condition=available --timeout=300s deployment/argocd-server -n argocd
 
+          # Wait for ArgoCD repo server to be ready
+          echo "Waiting for ArgoCD repo server to be ready..."
+          kubectl wait --for=condition=available --timeout=300s deployment/argocd-repo-server -n argocd
+
+          # Wait a bit more for all components to be ready
+          echo "Waiting for all ArgoCD components to be ready..."
+          sleep 30
+
+      - name: Build and load application image
+        run: |
+          # Build our app image
+          docker build -t interview-app:latest ./app
+          # Load it into the Kind cluster
+          kind load docker-image interview-app:latest --name gitops-cluster
+
       - name: Install application
         run: |
           # Install the interview-app application
