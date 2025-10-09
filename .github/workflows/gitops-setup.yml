@@ -61,6 +61,10 @@ jobs:
           # Install the interview-app application
           kubectl apply -f argocd/application.yaml
 
+          # Force ArgoCD to sync to the latest commit
+          echo "Forcing ArgoCD to sync to latest commit..."
+          kubectl patch application interview-app -n argocd --type merge -p '{"operation":{"sync":{"syncStrategy":{"hook":{"force":true}}}}}' || echo "Sync patch failed, continuing..."
+
           # Wait for application to sync (with timeout handling)
           echo "Waiting for application to sync and become healthy..."
           if kubectl wait --for=condition=healthy --timeout=300s application/interview-app -n argocd; then
