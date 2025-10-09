@@ -2,7 +2,7 @@
 replicaCount: 2
 
 image:
-  repository: ghcr.io/urahara897/interview-app
+  repository: interview-app
   pullPolicy: IfNotPresent
   tag: "latest"
 

@@ -52,19 +52,12 @@ jobs:
       - name: Set up Docker build environment
         uses: docker/setup-buildx-action@v3
 
-      - name: Login to GitHub Container Registry
-        uses: docker/login-action@v3
-        with:
-          registry: ghcr.io
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
-
       - name: Create and push application container
         uses: docker/build-push-action@v5
         with:
           context: ./app
-          push: true
-          tags: ghcr.io/${{ github.actor }}/interview-app:latest
+          push: false
+          tags: interview-app:latest
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
@@ -114,10 +107,17 @@ jobs:
               protocol: TCP
           EOF
 
+      - name: Prepare application container
+        run: |
+          # Build our app image
+          docker build -t interview-app:latest ./app
+          # Put it in the Kind cluster
+          kind load docker-image interview-app:latest --name interview-cluster
+
       - name: Configure deployment settings
         run: |
-          # Tell Helm to use our pushed image
-          sed -i "s|repository: ghcr.io/urahara897/interview-app|repository: ghcr.io/${{ github.actor }}/interview-app|g" helm/interview-app/values.yaml
+          # Tell Helm to use our local image
+          sed -i "s|repository: ghcr.io/urahara897/interview-app|repository: interview-app|g" helm/interview-app/values.yaml
           sed -i "s|tag: \".*\"|tag: \"latest\"|g" helm/interview-app/values.yaml
 
           # Show what we changed
