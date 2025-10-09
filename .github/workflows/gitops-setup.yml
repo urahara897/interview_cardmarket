@@ -35,47 +35,26 @@ jobs:
           sudo mv ./kind /usr/local/bin/kind
 
           # Create persistent Kind cluster for GitOps
-          kind create cluster --name gitops-cluster --config - <<EOF
-kind: Cluster
-apiVersion: kind.x-k8s.io/v1alpha4
-nodes:
-- role: control-plane
-  kubeadmConfigPatches:
-  - |
-    kind: InitConfiguration
-    nodeRegistration:
-      kubeletExtraArgs:
-        node-labels: "ingress-ready=true"
-  extraPortMappings:
-  - containerPort: 80
-    hostPort: 80
-    protocol: TCP
-  - containerPort: 443
-    hostPort: 443
-    protocol: TCP
-  - containerPort: 30080
-    hostPort: 30080
-    protocol: TCP
-EOF
+          kind create cluster --name gitops-cluster
 
-            - name: Build and load application image
-              run: |
-                  # Build our app image
-                  docker build -t interview-app:latest ./app
-                  # Load it into the Kind cluster
-                  kind load docker-image interview-app:latest --name gitops-cluster
+      - name: Build and load application image
+        run: |
+          # Build our app image
+          docker build -t interview-app:latest ./app
+          # Load it into the Kind cluster
+          kind load docker-image interview-app:latest --name gitops-cluster
 
-            - name: Install ArgoCD
-              run: |
-                  # Create ArgoCD namespace
-                  kubectl create namespace argocd --dry-run=client -o yaml | kubectl apply -f -
+      - name: Install ArgoCD
+        run: |
+          # Create ArgoCD namespace
+          kubectl create namespace argocd --dry-run=client -o yaml | kubectl apply -f -
 
-                  # Install ArgoCD
-                  kubectl apply -n argocd -f https://raw.githubusercontent.com/argoproj/argo-cd/stable/manifests/install.yaml
+          # Install ArgoCD
+          kubectl apply -n argocd -f https://raw.githubusercontent.com/argoproj/argo-cd/stable/manifests/install.yaml
 
-                  # Wait for ArgoCD to be ready
-                  echo "Waiting for ArgoCD to be ready..."
-                  kubectl wait --for=condition=available --timeout=300s deployment/argocd-server -n argocd
+          # Wait for ArgoCD to be ready
+          echo "Waiting for ArgoCD to be ready..."
+          kubectl wait --for=condition=available --timeout=300s deployment/argocd-server -n argocd
 
       - name: Install application
         run: |
