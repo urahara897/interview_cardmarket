@@ -26,7 +26,7 @@ This repository contains a complete example solution that demonstrates all the r
 - **Automated releases** with semantic versioning
 - **Kubernetes deployment** with proper configuration
 - **Infrastructure as Code** using Helm charts
-- **GitOps workflow** for continuous deployment
+- **GitOps workflow** for continuous deployment (with ArgoCD support)
 - **Automated testing** and CI/CD pipeline
 - **Changelog** with automated updates
 
@@ -152,6 +152,35 @@ All of this happens without you having to click any buttons or run any commands 
 
 > **Want to understand how the release system works?** Check out [RELEASE_CONFIG.md](RELEASE_CONFIG.md) for a detailed explanation of how semantic versioning, commit analysis, and automated releases work in this project.
 
+> **Want to set up true GitOps?** Check out [GITOPS_CONFIG.md](GITOPS_CONFIG.md) for a complete guide on implementing ArgoCD for continuous deployment and monitoring.
+
+## GitOps with ArgoCD (Optional)
+
+This project also includes GitOps configuration for true continuous deployment:
+
+### **What's Included:**
+
+- **ArgoCD Application** - `argocd/application.yaml` defines how to deploy
+- **Installation Script** - `argocd/install-argocd.sh` sets up ArgoCD
+- **GitOps Workflow** - `.github/workflows/gitops-setup.yml` for automated setup
+
+### **How to Use GitOps:**
+
+1. **Set up a persistent Kubernetes cluster** (EKS, GKE, AKS, or Minikube)
+2. **Run the installation script:**
+   ```bash
+   ./argocd/install-argocd.sh
+   ```
+3. **ArgoCD will continuously monitor** your Git repo and deploy changes
+4. **Access ArgoCD UI** to see deployment status and manage applications
+
+### **GitOps Benefits:**
+
+- **Continuous monitoring** - 24/7 watching for changes
+- **Drift detection** - Catches manual cluster changes
+- **Self-healing** - Automatically fixes problems
+- **Multi-environment** - Deploy to different clusters
+
 ## What's in This Repository
 
 ```
@@ -171,6 +200,9 @@ interview/
 │   └── script.sh             # Review comments for yaml files with the correct script
 ├── CHANGELOG.md              # What changed in each version
 ├── RELEASE_CONFIG.md         # How the automated release system works
+├── argocd/                   # GitOps configuration (optional)
+│   ├── application.yaml      # ArgoCD application definition
+│   └── install-argocd.sh     # ArgoCD installation script
 └── README.md                 # This file you're reading
 ```
 
