@@ -130,3 +130,16 @@ jobs:
           echo "=== Access ArgoCD UI ==="
           echo "kubectl port-forward svc/argocd-server -n argocd 8080:443"
           echo "Then visit: https://localhost:8080"
+
+          echo "=== Final Status Check ==="
+          echo "ArgoCD Application Status:"
+          kubectl get applications -n argocd -o wide
+
+          echo "Application Pods:"
+          kubectl get pods -l app.kubernetes.io/name=interview-app -o wide
+
+          echo "Recent Sync Events:"
+          kubectl get events -n argocd --sort-by='.lastTimestamp' | grep interview-app | tail -5
+
+          echo "Application Logs (Last 10 lines):"
+          kubectl logs -l app.kubernetes.io/name=interview-app --tail=10 || echo "No application pods found"
