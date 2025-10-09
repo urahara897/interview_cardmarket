@@ -111,6 +111,18 @@ jobs:
           echo "=== ArgoCD Applications ==="
           kubectl get applications -n argocd
 
+          echo "=== Recent Sync Events ==="
+          kubectl get events -n argocd --sort-by='.lastTimestamp' | grep interview-app | tail -10
+
+          echo "=== Application Pods ==="
+          kubectl get pods -l app.kubernetes.io/name=interview-app
+
+          echo "=== Application Logs ==="
+          kubectl logs -l app.kubernetes.io/name=interview-app --tail=20 || echo "No application pods found"
+
+          echo "=== Deployment Image ==="
+          kubectl describe deployment interview-app | grep Image || echo "No deployment found"
+
           echo "=== ArgoCD Admin Password ==="
           kubectl -n argocd get secret argocd-initial-admin-secret -o jsonpath="{.data.password}" | base64 -d
           echo ""
