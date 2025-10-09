@@ -2,8 +2,9 @@ name: ArgoCD Status Check
 
 on:
     workflow_dispatch:
-    schedule:
-        - cron: "*/5 * * * *" # Every 5 minutes
+    # Disable automatic runs since we need existing GitOps setup
+    # schedule:
+    #     - cron: "*/5 * * * *" # Every 5 minutes
 
 jobs:
     check-argocd-status:
@@ -18,20 +19,21 @@ jobs:
               with:
                   cluster_name: gitops-cluster
 
-            - name: Install ArgoCD
+            - name: Check if ArgoCD exists
               run: |
-                  # Install ArgoCD
-                  kubectl create namespace argocd
-                  kubectl apply -n argocd -f https://raw.githubusercontent.com/argoproj/argo-cd/stable/manifests/install.yaml
-
-                  # Wait for ArgoCD to be ready
-                  kubectl wait --for=condition=available --timeout=300s deployment/argocd-server -n argocd
-
-                  # Install the application
-                  kubectl apply -f argocd/application.yaml
-
-                  # Wait for application to be ready
-                  sleep 30
+                  echo "Checking if ArgoCD is already installed..."
+                  if kubectl get namespace argocd >/dev/null 2>&1; then
+                      echo "ArgoCD namespace exists"
+                      if kubectl get applications -n argocd >/dev/null 2>&1; then
+                          echo "ArgoCD applications found"
+                      else
+                          echo "ArgoCD exists but no applications found"
+                      fi
+                  else
+                      echo "ArgoCD not found - this status check needs an existing GitOps setup"
+                      echo "Please run the GitOps Setup workflow first"
+                      exit 1
+                  fi
 
             - name: Check ArgoCD Application Status
               run: |
