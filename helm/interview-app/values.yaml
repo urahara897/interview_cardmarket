@@ -5,6 +5,8 @@ image:
   repository: interview-app
   pullPolicy: IfNotPresent
   tag: "latest"
+  # For GitOps, this will always be 'latest'
+  # For CI/CD, this gets overridden by the pipeline
 
 imagePullSecrets: []
 nameOverride: ""

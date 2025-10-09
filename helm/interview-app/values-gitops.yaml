@@ -1,0 +1,8 @@
+# GitOps-specific values
+image:
+  repository: interview-app
+  tag: "latest"
+  pullPolicy: IfNotPresent
+
+# All other values remain the same as values.yaml
+replicaCount: 2
