@@ -64,7 +64,7 @@ jobs:
         with:
           context: ./app
           push: true
-          tags: ghcr.io/${{ github.repository }}:latest
+          tags: ghcr.io/${{ github.actor }}/interview-app:latest
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
@@ -117,7 +117,7 @@ jobs:
       - name: Configure deployment settings
         run: |
           # Tell Helm to use our pushed image
-          sed -i "s|repository: ghcr.io/urahara897/interview_cardmarket|repository: ghcr.io/${{ github.repository }}|g" helm/interview-app/values.yaml
+          sed -i "s|repository: ghcr.io/urahara897/interview-app|repository: ghcr.io/${{ github.actor }}/interview-app|g" helm/interview-app/values.yaml
           sed -i "s|tag: \".*\"|tag: \"latest\"|g" helm/interview-app/values.yaml
 
           # Show what we changed
