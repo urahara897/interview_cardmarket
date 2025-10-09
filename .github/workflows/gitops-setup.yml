@@ -67,7 +67,7 @@ jobs:
 
           # Wait for application to sync (with timeout handling)
           echo "Waiting for application to sync and become healthy..."
-          if kubectl wait --for=condition=healthy --timeout=300s application/interview-app -n argocd; then
+          if kubectl wait --for=condition=healthy --timeout=120s application/interview-app -n argocd; then
               echo "Application is healthy!"
           else
               echo "Application health check timed out, but checking if it's actually working..."
@@ -75,10 +75,10 @@ jobs:
               # Check if pods are running
               PODS_RUNNING=$(kubectl get pods -l app.kubernetes.io/name=interview-app --no-headers | grep -c "Running" || echo "0")
               if [ "$PODS_RUNNING" -gt 0 ]; then
-                  echo "✅ Application is actually working! $PODS_RUNNING pods are running."
+                  echo "Application is actually working! $PODS_RUNNING pods are running."
                   echo "The health check timeout was likely due to ArgoCD's health assessment timing."
               else
-                  echo "❌ Application is not working properly. Debugging..."
+                  echo "Application is not working properly. Debugging..."
                   
                   echo "=== ArgoCD Applications ==="
                   kubectl get applications -n argocd
