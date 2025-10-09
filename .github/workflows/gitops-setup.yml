@@ -58,17 +58,24 @@ jobs:
               protocol: TCP
           EOF
 
-      - name: Install ArgoCD
-        run: |
-          # Create ArgoCD namespace
-          kubectl create namespace argocd --dry-run=client -o yaml | kubectl apply -f -
+            - name: Build and load application image
+              run: |
+                  # Build our app image
+                  docker build -t interview-app:latest ./app
+                  # Load it into the Kind cluster
+                  kind load docker-image interview-app:latest --name gitops-cluster
 
-          # Install ArgoCD
-          kubectl apply -n argocd -f https://raw.githubusercontent.com/argoproj/argo-cd/stable/manifests/install.yaml
+            - name: Install ArgoCD
+              run: |
+                  # Create ArgoCD namespace
+                  kubectl create namespace argocd --dry-run=client -o yaml | kubectl apply -f -
 
-          # Wait for ArgoCD to be ready
-          echo "Waiting for ArgoCD to be ready..."
-          kubectl wait --for=condition=available --timeout=300s deployment/argocd-server -n argocd
+                  # Install ArgoCD
+                  kubectl apply -n argocd -f https://raw.githubusercontent.com/argoproj/argo-cd/stable/manifests/install.yaml
+
+                  # Wait for ArgoCD to be ready
+                  echo "Waiting for ArgoCD to be ready..."
+                  kubectl wait --for=condition=available --timeout=300s deployment/argocd-server -n argocd
 
       - name: Install application
         run: |
